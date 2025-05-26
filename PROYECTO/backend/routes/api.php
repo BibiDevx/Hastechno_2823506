@@ -85,6 +85,9 @@ Route::middleware(['auth:api', 'role:Admin'])->prefix('productos')->group(functi
     Route::post('/registrar', [productoController::class, 'store']);
     Route::patch('/actualizar/{id}', [productoController::class, 'updatePartial'])->where('id', '[0-9]+');
     Route::delete('/eliminar/{id}', [productoController::class, 'destroy'])->where('id', '[0-9]+');    
+    // Rutas para la gestión de categorías de un producto
+    Route::get('/{id}/categorias', [productoController::class, 'getProductCategories'])->where('id', '[0-9]+');
+    Route::patch('/{id}/categorias', [productoController::class, 'syncProductCategories'])->where('id', '[0-9]+');
 });
 //CATEGORIAS
 Route::middleware(['auth:api', 'role:Admin'])->prefix('categorias')->group(function () {

@@ -76,6 +76,11 @@ class productoController extends BaseController
             'idMarca' => $request->idMarca,
             'idProveedor' => $request->idProveedor,
         ]);
+
+        $producto->load([
+            'marca:idMarca,nombreMarca', // Carga solo idMarca y nombreMarca para la relación marca
+            'proveedor:idProveedor,nombreProveedor' // Carga solo idProveedor y nombreProveedor para la relación proveedor
+        ]);
     
         // Retornamos una respuesta con el producto creado
         return response()->json($producto, 201);
@@ -130,5 +135,58 @@ class productoController extends BaseController
         $producto->delete();
 
         return $this->sendResponse([], 'Producto eliminado correctamente');
+    }
+
+    /**
+     * Obtiene las categorías asociadas a un producto específico.
+     * GET /api/productos/{id}/categorias
+     */
+    public function getProductCategories($id)
+    {
+        $producto = Producto::find($id);
+
+        if (!$producto) {
+            return $this->sendError('Producto no encontrado');
+        }
+
+        // Carga solo las columnas específicas y cualifica 'idCategoria'
+        // Especifica 'categoria.idCategoria' para evitar ambigüedad.
+        $categorias = $producto->categorias()->select('categoria.idCategoria', 'nombreCategoria')->get();
+        // Opcionalmente, puedes eliminar el select para que Eloquent lo maneje por defecto si sus convenciones son suficientes.
+        // Pero si quieres seleccionar solo estas columnas, la cualificación es clave.
+
+        return $this->sendResponse($categorias, 'Categorías del producto obtenidas correctamente.');
+    }
+
+    /**
+     * Sincroniza las categorías para un producto específico.
+     * PATCH /api/productos/{id}/categorias
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id  ID del producto
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function syncProductCategories(Request $request, $id)
+    {
+        $producto = Producto::find($id);
+
+        if (!$producto) {
+            return $this->sendError('Producto no encontrado');
+        }
+
+        $request->validate([
+            'categorias' => 'sometimes|array',
+            'categorias.*' => 'exists:categoria,idCategoria',
+        ]);
+
+        if ($request->has('categorias')) {
+            $producto->categorias()->sync($request->categorias);
+        }
+
+        // Carga las relaciones de categorías para la respuesta
+        // Aquí también es buena práctica cualificar si vas a seleccionar campos específicos
+        $producto->load(['categorias:categoria.idCategoria,nombreCategoria']);
+
+        return $this->sendResponse($producto, 'Categorías del producto actualizadas correctamente.');
     }
 }

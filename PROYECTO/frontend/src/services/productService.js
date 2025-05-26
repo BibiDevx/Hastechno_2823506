@@ -79,7 +79,6 @@ const productService = {
       const response = await axios.patch(`${API_BASE_URL}/productos/actualizar/${id}`, productData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'multipart/form-data', // Considera si siempre necesitas esto
         },
       });
       return response.data;

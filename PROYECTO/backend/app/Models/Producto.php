@@ -33,8 +33,6 @@ class Producto extends Model
     protected $hidden = [
         'created_at',
         'updated_at',
-        'idMarca',     
-        'idProveedor'  
     ];
 
     public function proveedor()
