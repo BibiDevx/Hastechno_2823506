@@ -19,6 +19,8 @@ Role.init({
         type: DataTypes.STRING,
         allowNull: true,
     }
-},{ sequelize, modelName: "Role"});
+},{ sequelize, modelName: "Role",
+    tableName: "Role",
+});
 
 export default Role;

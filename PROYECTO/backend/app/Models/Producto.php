@@ -39,4 +39,9 @@ class Producto extends Model
     {
         return $this->belongsTo(Proveedor::class, 'idProveedor')->select(['idProveedor', 'nombreProveedor']);
     }
+    public function pedidos()
+    {
+        return $this->hasMany(PedidoProducto::class, 'idProducto');
+    }
+
 }

@@ -19,7 +19,7 @@ async function testConnection() {
         await sequelize
         .authenticate()
         .then(() => {0
-            console.lo0g('DATABASE CONNECTED...');
+            console.log('DATABASE CONNECTED...');
         })
         .catch ((err) => {
             console.log(err);

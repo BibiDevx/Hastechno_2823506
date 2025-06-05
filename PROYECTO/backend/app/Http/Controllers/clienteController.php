@@ -12,8 +12,10 @@ class clienteController extends BaseController
     // 🔹 Obtener todos los clientes
     public function index()
     {
-        $clientes = Cliente::all();
-        return $this->sendResponse($clientes, 'Lista de clientes obtenida exitosamente.');
+        // Carga la relación 'usuario' junto con cada cliente
+        $clientes = Cliente::with('usuario')->get();
+        // Asegúrate de que tu BaseController o método de respuesta maneje el formato success/data
+        return $this->sendResponse($clientes, 'Clientes obtenidos correctamente.');
     }
 
     // 🔹 Obtener un cliente por ID

@@ -30,6 +30,8 @@ User.init({
         type: DataTypes.INTEGER,
         allowNull: false,
     }
-},{ sequelize, modelName: "User"});
+},{ sequelize, modelName: "User",
+    tableName: "User",
+});
 
 export default User;

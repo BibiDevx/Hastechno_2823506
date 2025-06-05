@@ -15,7 +15,7 @@ import EditarPerfil from "./components/client/EditarPerfil";
 import SidebarAdmin from "./components/admin/SidebarAdmin";
 import ProductInfo from "./components/client/ProductInfo";
 import ProductosPorMarca from "./components/client/ProductosPorMarca";
-import ProductoCategorias from './components/admin/productosCategorias'; // Asumiendo que es el path correcto
+import ProductoCategorias from './components/admin/productosCategorias';
 
 function App() {
   return (
@@ -31,57 +31,64 @@ function MainLayout() {
   const location = useLocation();
 
   useEffect(() => {
-    if (!usuario) return; // Si no hay usuario, no hacer nada
+    // Si no hay usuario logueado, no hacemos nada de redirección basada en roles.
+    if (!usuario) return;
 
     const currentPath = location.pathname;
 
-    // Lógica de redirección más precisa para evitar bucles:
+    // Lógica de redirección inicial según el rol del usuario
     if (usuario.rol === "Admin") {
-      // Si el usuario es Admin y NO está en una ruta que comienza con /admin,
-      // redirige a /admin. Si ya está en /admin/*, no hace nada.
+      // Si es Admin y NO está en una ruta que comienza con /admin, lo redirigimos a /admin.
       if (!currentPath.startsWith("/admin")) {
         navigate("/admin");
       }
     } else if (usuario.rol === "SuperAdmin") {
-      // Si el usuario es SuperAdmin y NO está en una ruta que comienza con /superadmin,
-      // redirige a /superadmin/dashboard. Si ya está en /superadmin/*, no hace nada.
-      if (!currentPath.startsWith("/superadmin")) {
-        navigate("/superadmin/dashboard"); // O la ruta por defecto que quieras
+      // Si es SuperAdmin:
+      // Lo dejamos pasar si está en una ruta de /superadmin o /admin.
+      // Si no está en NINGUNA de esas, lo redirigimos a su dashboard por defecto.
+      if (!currentPath.startsWith("/superadmin") && !currentPath.startsWith("/admin")) {
+        navigate("/admin"); // Ruta por defecto para SuperAdmin
       }
-    } else if (usuario.rol === "cliente") {
-      // Si el usuario es cliente y está en una ruta de admin o superadmin,
-      // redirige a /perfil.
+    } else if (usuario.rol === "Cliente") {
+      // Si es Cliente y está intentando acceder a una ruta de admin/superadmin, lo redirigimos a su perfil.
       if (currentPath.startsWith("/admin") || currentPath.startsWith("/superadmin")) {
         navigate("/perfil");
       }
     }
-    // Si ninguna de las condiciones anteriores se cumple, significa que el usuario
-    // ya está en una ruta adecuada para su rol, o no tiene un rol que requiera redirección
-    // inmediata, por lo que no se llama a 'navigate'.
-  }, [usuario, location.pathname, navigate]); // Usamos location.pathname para que el efecto solo reaccione a cambios de ruta, no a otros cambios en el objeto location
+  }, [usuario, location.pathname, navigate]);
 
-  const isAdminRoute = location.pathname.startsWith("/admin");
-  const isSuperAdminRoute = location.pathname.startsWith("/superadmin");
+  // Decidimos si mostrar el SidebarAdmin o la Navbar.
+  // El SidebarAdmin se muestra si la ruta actual empieza con /admin o /superadmin.
+  const isAdminOrSuperAdminRoute = location.pathname.startsWith("/admin") || location.pathname.startsWith("/superadmin");
 
   return (
     <div className="d-flex">
-      {(isAdminRoute || isSuperAdminRoute) && <SidebarAdmin />}
+      {/* Mostrar SidebarAdmin si la ruta es de administración/superadministración */}
+      {isAdminOrSuperAdminRoute && <SidebarAdmin />}
+
       <div className="flex-grow-1">
-        {!(isAdminRoute || isSuperAdminRoute) ? <Navbar /> : null}
+        {/* Mostrar Navbar si la ruta NO es de administración/superadministración */}
+        {!isAdminOrSuperAdminRoute ? <Navbar /> : null}
+
         <Routes>
-          {/* Rutas de administración */}
-          {/* Es más común tener un Route Wrapper para rutas protegidas */}
+          {/* Rutas para administradores: tanto 'Admin' como 'SuperAdmin' accederán aquí. */}
           <Route path="/admin/*" element={<AdminRoutes />} />
-          {/* Rutas de superadministración */}
-          <Route path="/superadmin/*" element={<AdminRoutes />} /> {/* Asumiendo que AdminRoutes sirve también para SuperAdmin */}
-          {/* Rutas de cliente */}
+
+          {/* Rutas para superadministradores: Si son las mismas que Admin, usamos AdminRoutes.
+              Si SuperAdmin tuviera rutas exclusivas, se definirían aquí con un componente aparte. */}
+          <Route path="/superadmin/*" element={<AdminRoutes />} />
+
+          {/* Rutas para clientes y rutas públicas */}
           <Route path="/*" element={<ClienteRoutes />} />
-          {/* Rutas específicas */}
+
+          {/* Rutas específicas fuera de los grupos principales (cliente) */}
           <Route path="/perfil" element={<Perfil />} />
           <Route path="/editar-perfil" element={<EditarPerfil />} />
           <Route path="/info/:idProducto" element={<ProductInfo />} />
           <Route path="/productos/marca/:idMarca" element={<ProductosPorMarca />} />
-          {/* Asegúrate de que esta ruta no se solape con ninguna otra ruta de AdminRoutes o ClienteRoutes si están definidas como comodín */}
+
+          {/* Considera si esta ruta debe ser accesible para todos o solo para admins.
+              Si es solo para admins, lo ideal es moverla DENTRO de AdminRoutes. */}
           <Route path="/admin/productos/:idProducto/categorias" element={<ProductoCategorias />} />
         </Routes>
       </div>

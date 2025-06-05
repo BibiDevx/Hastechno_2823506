@@ -7,6 +7,10 @@ use App\Http\Controllers\marcaController;
 use App\Http\Controllers\productoController;
 use App\Http\Controllers\rolController;
 use App\Http\Controllers\proveedorController;
+use App\Http\Controllers\facturaController;
+use App\Http\Controllers\pedidoController;
+use App\Http\Controllers\pedidoProductoController;
+use App\Http\Controllers\carritoController;
 use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Support\Facades\Route;
 
@@ -50,8 +54,6 @@ Route::middleware(['auth:api', 'role:Cliente'])->prefix('clientes')->group(funct
 //Rutas protegidas para admin (requieren autenticación)
 Route::middleware(['auth:api', 'role:Admin'])->prefix('admin')->group(function () {
     Route::patch('/actualizar/datos', [adminController::class, 'updatePartial']);
-    Route::get('/', [adminController::class, 'index']);
-    Route::get('/{id}', [adminController::class, 'show'])->where('id', '[0-9]+');
 });
 
 Route::middleware(['auth:api', 'role:Admin'])->prefix('consumidores')->group(function () {
@@ -68,9 +70,13 @@ Route::middleware(['auth:api', 'role:SuperAdmin'])->prefix('auth')->group(functi
     Route::post('/register/admin', [AuthController::class, 'registerAdmin']);
 });
 Route::middleware(['auth:api', 'role:SuperAdmin'])->prefix('users')->group(function () {
+    Route::get('/', [adminController::class, 'index']);
+});
+Route::middleware(['auth:api', 'role:SuperAdmin'])->prefix('userss')->group(function () {
+    Route::get('/{id}', [adminController::class, 'show'])->where('id', '[0-9]+');
     Route::patch('/admin/{id}', [adminController::class, 'actualizarAdmins'])->where('id', '[0-9]+'); // Actualización parcial puede cambiar rol
     Route::delete('/admin/{id}', [adminController::class, 'destroy'])->where('id', '[0-9]+');
-}); 
+});
 Route::middleware(['auth:api', 'role:SuperAdmin'])->prefix('control')->group(function () {
     Route::post('/roles/registrar', [rolController::class, 'store']);
     Route::get('/roles', [rolController::class, 'index']);
@@ -84,7 +90,7 @@ Route::middleware(['auth:api', 'role:Admin'])->prefix('productos')->group(functi
     Route::get('/detalles', [productoController::class, 'detalles']);
     Route::post('/registrar', [productoController::class, 'store']);
     Route::patch('/actualizar/{id}', [productoController::class, 'updatePartial'])->where('id', '[0-9]+');
-    Route::delete('/eliminar/{id}', [productoController::class, 'destroy'])->where('id', '[0-9]+');    
+    Route::delete('/eliminar/{id}', [productoController::class, 'destroy'])->where('id', '[0-9]+');
     // Rutas para la gestión de categorías de un producto
     Route::get('/{id}/categorias', [productoController::class, 'getProductCategories'])->where('id', '[0-9]+');
     Route::patch('/{id}/categorias', [productoController::class, 'syncProductCategories'])->where('id', '[0-9]+');
@@ -112,3 +118,21 @@ Route::middleware(['auth:api', 'role:Admin'])->prefix('proveedores')->group(func
     Route::patch('/actualizar/{id}', [proveedorController::class, 'updatePartial'])->where('id', '[0-9]+');
     Route::delete('/eliminar/{id}', [proveedorController::class, 'destroy'])->where('id', '[0-9]+');
 });
+/////////Faltantes por probar y asignar
+// Productos por pedido
+Route::get('/pedido/{idPedido}/productos', [PedidoProductoController::class, 'index']);
+Route::post('/pedido-producto', [PedidoProductoController::class, 'store']);
+// Carrito
+Route::get('/carrito/{idCliente}', [CarritoController::class, 'index']);
+Route::post('/carrito', [CarritoController::class, 'store']);
+Route::put('/carrito/{id}', [CarritoController::class, 'update']);
+Route::delete('/carrito/{id}', [CarritoController::class, 'destroy']);
+
+// Pedidos
+Route::get('/pedidos/{idCliente}', [PedidoController::class, 'index']);
+Route::post('/pedidos', [PedidoController::class, 'store']);
+Route::get('/pedido/{id}', [PedidoController::class, 'show']);
+
+// Factura
+Route::get('/factura/pedido/{idPedido}', [FacturaController::class, 'show']);
+Route::post('/factura', [FacturaController::class, 'store']);

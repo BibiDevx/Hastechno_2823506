@@ -91,7 +91,7 @@ export default function SidebarAdmin() {
             ></i>
           </div>
           <div className={`collapse ${isUsuariosOpen ? "show" : ""} ms-3`}>
-            {usuario?.rol === "superadmin" && (
+            {usuario?.rol === "SuperAdmin" && (
               <Link className="nav-link text-white py-1" to="/admin/usuarios/admin">
                 Admins
               </Link>
