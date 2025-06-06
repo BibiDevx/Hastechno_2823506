@@ -11,6 +11,7 @@ use App\Http\Controllers\facturaController;
 use App\Http\Controllers\pedidoController;
 use App\Http\Controllers\pedidoProductoController;
 use App\Http\Controllers\carritoController;
+use App\Http\Controllers\usuarioController;
 use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Support\Facades\Route;
 
@@ -136,3 +137,10 @@ Route::get('/pedido/{id}', [PedidoController::class, 'show']);
 // Factura
 Route::get('/factura/pedido/{idPedido}', [FacturaController::class, 'show']);
 Route::post('/factura', [FacturaController::class, 'store']);
+//usuario
+Route::middleware(['auth:api', 'role:Admin'])->prefix('usuarios')->group(function () {
+    Route::post('/crear-obtener', [usuarioController::class, 'crearObtenerUsuario']);
+    Route::get('/', [usuarioController::class, 'index']);
+    Route::get('/{id}', [usuarioController::class, 'show']);
+    Route::delete('/eliminar/{id}', [usuarioController::class, 'destroy']);
+});
