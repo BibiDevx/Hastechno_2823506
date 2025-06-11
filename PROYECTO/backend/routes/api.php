@@ -70,13 +70,12 @@ Route::middleware(['auth:api', 'role:SuperAdmin'])->prefix('auth')->group(functi
     Route::post('/register/admin', [AuthController::class, 'registerAdmin']);
 });
 Route::middleware(['auth:api', 'role:SuperAdmin'])->prefix('users')->group(function () {
-    Route::get('/', [adminController::class, 'index']);
+    Route::get('/show', [adminController::class, 'index']);
+    Route::get('/ver/admin/{id}', [adminController::class, 'show'])->where('id', '[0-9]+');
+    Route::patch('/actualizar/admin/{id}', [adminController::class, 'actualizarAdmins'])->where('id', '[0-9]+'); // Actualización parcial puede cambiar rol
+    Route::delete('/delete/admin/{id}', [adminController::class, 'destroy'])->where('id', '[0-9]+');
 });
-Route::middleware(['auth:api', 'role:SuperAdmin'])->prefix('userss')->group(function () {
-    Route::get('/{id}', [adminController::class, 'show'])->where('id', '[0-9]+');
-    Route::patch('/admin/{id}', [adminController::class, 'actualizarAdmins'])->where('id', '[0-9]+'); // Actualización parcial puede cambiar rol
-    Route::delete('/admin/{id}', [adminController::class, 'destroy'])->where('id', '[0-9]+');
-});
+/////////ROL
 Route::middleware(['auth:api', 'role:SuperAdmin'])->prefix('control')->group(function () {
     Route::post('/roles/registrar', [rolController::class, 'store']);
     Route::get('/roles', [rolController::class, 'index']);

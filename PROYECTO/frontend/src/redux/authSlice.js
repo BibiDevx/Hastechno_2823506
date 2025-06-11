@@ -1,10 +1,11 @@
 // src/redux/authSlice.js
 import { createSlice } from '@reduxjs/toolkit';
 
+// Recuperamos los datos de localStorage al iniciar la app
 const initialState = {
-  isAuthenticated: false,
-  usuario: null, // Aquí guardaremos la información del usuario (incluyendo el role)
-  token: null,
+  isAuthenticated: !!localStorage.getItem('token'),
+  usuario: JSON.parse(localStorage.getItem('user')) || null,
+  token: localStorage.getItem('token') || null,
   error: null,
 };
 
@@ -14,9 +15,13 @@ export const authSlice = createSlice({
   reducers: {
     loginSuccess: (state, action) => {
       state.isAuthenticated = true;
-      state.usuario = action.payload.user; // Guardamos el objeto 'user' completo
+      state.usuario = action.payload.user;
       state.token = action.payload.access_token;
       state.error = null;
+
+      // Guardamos en localStorage
+      localStorage.setItem('user', JSON.stringify(state.usuario));
+      localStorage.setItem('token', state.token);
     },
     loginFailure: (state, action) => {
       state.isAuthenticated = false;
@@ -29,6 +34,10 @@ export const authSlice = createSlice({
       state.usuario = null;
       state.token = null;
       state.error = null;
+
+      // Limpiamos localStorage
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
     },
     clearError: (state) => {
       state.error = null;

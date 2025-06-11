@@ -142,9 +142,9 @@ export default function CategoriasAdmin() {
         <tbody>
           {categorias.length > 0 ? (
             categorias.map((categoria) => (
-              <tr key={categoria.idCategoria}> {/* Asegúrate de usar idCategoria */}
-                <td>{categoria.idCategoria}</td> {/* Asegúrate de usar idCategoria */}
-                <td>{categoria.nombreCategoria}</td> {/* Asegúrate de usar nombreCategoria */}
+              <tr key={categoria.idCategoria}> 
+                <td>{categoria.idCategoria}</td> 
+                <td>{categoria.nombreCategoria}</td> 
                 <td>
                   <button
                     className="btn btn-primary me-2"
@@ -200,7 +200,7 @@ export default function CategoriasAdmin() {
                         />
                     </div>
                 </form>
-                {error && <div className="alert alert-danger mt-3">{error}</div>} {/* Muestra el error dentro del modal */}
+                {error && <div className="alert alert-danger mt-3">{error}</div>} 
               </div>
               <div className="modal-footer">
                 <button

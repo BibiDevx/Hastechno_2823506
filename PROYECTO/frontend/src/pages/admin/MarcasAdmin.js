@@ -6,10 +6,10 @@ export default function MarcasAdmin() {
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState("");
   const [selectedMarca, setSelectedMarca] = useState(null);
-  const [marcas, setMarcas] = useState([]); // Initialize as empty array
-  const [loading, setLoading] = useState(true); // Add loading state
-  const [error, setError] = useState(null); // Add error state
-  const [nombreMarca, setNombreMarca] = useState(''); // State for modal input
+  const [marcas, setMarcas] = useState([]); 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null); 
+  const [nombreMarca, setNombreMarca] = useState(''); 
 
   // Fetch brands on component mount
   useEffect(() => {
@@ -18,35 +18,35 @@ export default function MarcasAdmin() {
         const response = await marcaService.getAllMarcas();
         if (response.success && Array.isArray(response.data)) {
           setMarcas(response.data);
-          setError(null); // Clear any previous errors
+          setError(null); 
         } else {
           setError("La API no devolvió una lista de marcas.");
-          setMarcas([]); // Ensure brands is an empty array
+          setMarcas([]); 
         }
       } catch (err) {
         console.error("Error al cargar las marcas:", err);
         setError("Error al cargar las marcas. " + (err.response?.data?.message || err.message));
-        setMarcas([]); // Clear brands on error
+        setMarcas([]); 
       } finally {
         setLoading(false);
       }
     };
 
     fetchMarcas();
-  }, []); // Empty dependency array means this runs once on mount
+  }, []);
 
   const handleShowModal = (type, marca = null) => {
     setModalType(type);
     setSelectedMarca(marca);
-    setNombreMarca(marca ? marca.nombre : ''); // Set input value for edit/add
+    setNombreMarca(marca ? marca.nombre : ''); 
     setShowModal(true);
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedMarca(null);
-    setNombreMarca(''); // Clear input on close
-    setError(null); // Clear errors when modal closes
+    setNombreMarca(''); 
+    setError(null); 
   };
 
   const handleSaveMarca = async () => {
@@ -56,13 +56,13 @@ export default function MarcasAdmin() {
     }
 
     try {
-      setLoading(true); // Show loading when saving
+      setLoading(true); 
       let response;
       if (modalType === "agregar") {
         response = await marcaService.createMarca({ nombreMarca: nombreMarca.trim() });
-        setMarcas((prevMarcas) => [...prevMarcas, response.data]); // Add new brand to state
-      } else { // editar
-        if (!selectedMarca || !selectedMarca.idMarca) { // Ensure idMarca exists
+        setMarcas((prevMarcas) => [...prevMarcas, response.data]); 
+      } else { 
+        if (!selectedMarca || !selectedMarca.idMarca) { 
           setError("ID de marca no válido para editar.");
           setLoading(false);
           return;
@@ -70,12 +70,12 @@ export default function MarcasAdmin() {
         response = await marcaService.updateMarca(selectedMarca.idMarca, { nombreMarca: nombreMarca.trim() });
         setMarcas((prevMarcas) =>
           prevMarcas.map((marca) =>
-            marca.idMarca === response.data.idMarca ? response.data : marca // Update brand in state
+            marca.idMarca === response.data.idMarca ? response.data : marca 
           )
         );
       }
-      handleCloseModal(); // Close modal on success
-      setError(null); // Clear any previous errors
+      handleCloseModal(); 
+      setError(null); 
     } catch (err) {
       console.error("Error al guardar la marca:", err);
       setError(err.response?.data?.message || 'Error al guardar la marca.');
@@ -87,15 +87,15 @@ export default function MarcasAdmin() {
   const handleDelete = async (id) => {
     if (window.confirm("¿Estás seguro de que deseas eliminar esta marca?")) {
       try {
-        setLoading(true); // Show loading when deleting
+        setLoading(true); 
         await marcaService.deleteMarca(id);
-        setMarcas(marcas.filter((marca) => marca.idMarca !== id)); // Remove brand from state
-        setError(null); // Clear any previous errors
+        setMarcas(marcas.filter((marca) => marca.idMarca !== id)); 
+        setError(null); 
       } catch (err) {
         console.error("Error al eliminar la marca:", err);
         setError(err.response?.data?.message || 'Error al eliminar la marca.');
       } finally {
-        setLoading(false); // Hide loading
+        setLoading(false); 
       }
     }
   };
@@ -104,7 +104,7 @@ export default function MarcasAdmin() {
     return <div className="container mt-4">Cargando marcas...</div>;
   }
 
-  if (error && !showModal) { // Display general error if not in modal
+  if (error && !showModal) { 
     return <div className="container mt-4 alert alert-danger">{error}</div>;
   }
 
@@ -114,7 +114,7 @@ export default function MarcasAdmin() {
       <button className="btn btn-success mb-3" onClick={() => handleShowModal("agregar")}>
         Agregar Marca
       </button>
-      {error && showModal && ( // Display modal-specific error
+      {error && showModal && ( 
         <div className="alert alert-danger mt-3">{error}</div>
       )}
       <table className="table table-bordered">
@@ -128,9 +128,9 @@ export default function MarcasAdmin() {
         <tbody>
           {marcas.length > 0 ? (
             marcas.map((marca) => (
-              <tr key={marca.idMarca}> {/* Use idMarca from API */}
-                <td>{marca.idMarca}</td> {/* Use idMarca from API */}
-                <td>{marca.nombreMarca}</td> {/* Use nombreMarca from API */}
+              <tr key={marca.idMarca}> 
+                <td>{marca.idMarca}</td> 
+                <td>{marca.nombreMarca}</td> 
                 <td>
                   <button
                     className="btn btn-primary me-2"
@@ -173,20 +173,20 @@ export default function MarcasAdmin() {
                 ></button>
               </div>
               <div className="modal-body">
-                <form onSubmit={(e) => e.preventDefault()}> {/* Prevent default form submission */}
+                <form onSubmit={(e) => e.preventDefault()}> 
                   <div className="mb-3">
                     <label htmlFor="nombreMarca" className="form-label">Nombre</label>
                     <input
                       type="text"
                       className="form-control"
                       id="nombreMarca"
-                      value={nombreMarca} // Controlled component
+                      value={nombreMarca} 
                       onChange={(e) => setNombreMarca(e.target.value)}
                       required // Mark as required
                     />
                   </div>
                 </form>
-                {error && <div className="alert alert-danger mt-3">{error}</div>} {/* Display error inside modal */}
+                {error && <div className="alert alert-danger mt-3">{error}</div>} 
               </div>
               <div className="modal-footer">
                 <button
@@ -200,7 +200,7 @@ export default function MarcasAdmin() {
                   type="button"
                   className="btn btn-primary"
                   onClick={handleSaveMarca}
-                  disabled={loading} // Disable button when saving
+                  disabled={loading} 
                 >
                   {loading ? 'Guardando...' : 'Guardar'}
                 </button>

@@ -174,7 +174,7 @@ export default function UsuariosCliente() {
             <th>Nombre</th>
             <th>Apellido</th>
             <th>Cédula</th>
-            <th>Correo</th> {/* Añadido Email aquí */}
+            <th>Correo</th> 
             <th>Teléfono</th>
             <th>Dirección</th>
             <th>Acciones</th>
@@ -183,11 +183,11 @@ export default function UsuariosCliente() {
         <tbody>
           {clientes.length > 0 ? (
             clientes.map((cliente) => (
-              <tr key={cliente.idCliente}> {/* Usamos idCliente como key */}
+              <tr key={cliente.idCliente}> 
                 <td>{cliente.nombreCliente}</td>
                 <td>{cliente.apellidoCliente}</td>
                 <td>{cliente.cedulaCliente}</td>
-                <td>{cliente.usuario ? cliente.usuario.email : 'N/A'}</td> {/* Muestra el email del usuario asociado */}
+                <td>{cliente.usuario ? cliente.usuario.email : 'N/A'}</td> 
                 <td>{cliente.telefonoCliente}</td>
                 <td>{cliente.direccion}</td>
                 <td>

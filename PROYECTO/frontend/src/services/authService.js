@@ -1,5 +1,5 @@
 // src/services/authService.js
-import axios from "axios";
+import axios from 'axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 const API_AUTH_URL = `${API_BASE_URL}/auth`; // Define la ruta base para la autenticación
@@ -40,7 +40,7 @@ const login = async (email, password) => {
 
     const { access_token, user } = response.data.data;
 
-    // Guardamos el token y el usuario
+    // Guardamos el token y el usuario en localStorage
     localStorage.setItem("token", access_token);
     localStorage.setItem("user", JSON.stringify(user));
 
@@ -66,6 +66,7 @@ const logout = async () => {
       }
     );
 
+    // Eliminar datos de localStorage
     localStorage.removeItem("token");
     localStorage.removeItem("user");
   } catch (error) {

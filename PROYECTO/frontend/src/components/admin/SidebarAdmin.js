@@ -96,6 +96,11 @@ export default function SidebarAdmin() {
                 Admins
               </Link>
             )}
+            {usuario?.rol === "SuperAdmin" && (
+              <Link className="nav-link text-white py-1" to="/admin/usuarios/roles">
+                Roles
+              </Link>
+            )}
             <Link className="nav-link text-white py-1" to="/admin/usuarios/cliente">
               Clientes
             </Link>

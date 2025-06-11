@@ -7,6 +7,7 @@ import UsuariosCliente from "../pages/admin/UsuariosCliente";
 import MarcasAdmin from "../pages/admin/MarcasAdmin";
 import CategoriasAdmin from "../pages/admin/CategoriasAdmin";
 import PerfilAdmin from "../pages/admin/PerfilAdmin";
+import RolesAdmin from "../pages/admin/RolesAdmin";
 
 
 export default function AdminRoutes() {
@@ -16,6 +17,7 @@ export default function AdminRoutes() {
       <Route path="/productos" element={<ProductosAdmin />} />
       <Route path="/pedidos" element={<PedidosAdmin />} />
       <Route path="/usuarios/admin" element={<UsuariosAdmin />} />
+      <Route path="/usuarios/roles" element={<RolesAdmin />} />
       <Route path="/usuarios/cliente" element={<UsuariosCliente />} />
       <Route path="/marcas" element={<MarcasAdmin />} />
       <Route path="/categorias" element={<CategoriasAdmin />} />
