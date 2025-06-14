@@ -15,7 +15,7 @@ class Proveedor extends Model
 
     protected $fillable = [
         'nombreProveedor',
-        'correoProveedor',
+        'emailProveedor',
         'telefonoProveedor'
     ];
        protected $hidden = [

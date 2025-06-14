@@ -1,26 +1,45 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
+// Importamos la acción logout del authSlice
 import { logout } from "../../redux/authSlice";
-import authServices from "../../services/authService";
+// Importamos la acción clearLocalCart del cartSlice
+import { clearLocalCart } from "../../redux/cartSlice"; // Asegúrate de que esta ruta sea correcta
+import authServices from "../../services/authService"; // Todavía usamos el servicio para la llamada al backend de logout
 
 function Navbar() {
-  const usuario = useSelector((state) => state.auth.usuario);
-  const cartItems = useSelector((state) => state.carrito);
+  // Ahora useSelector para 'usuario' debería ser 'auth.user'
+  const usuario = useSelector((state) => state.auth.user); 
+  // Ahora cartItems es state.carrito.items porque el slice de carrito tiene un objeto con 'items'
+  const cartItems = useSelector((state) => state.carrito.items);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  // El cálculo del carrito ahora usa cartItems directamente
   const cartCount = cartItems.reduce(
-    (total, item) => total + (item.cantidad || 1),
+    (total, item) => total + (item.cantidad || 0), // Aseguramos 0 si cantidad es undefined/null
     0
   );
 
   const handleLogout = async () => {
     try {
-      await authServices.logout();
+      // Si tu backend tiene un endpoint para 'logout' que invalida el token
+      // puedes mantener esta línea. Si solo invalida el token en el cliente,
+      // esta llamada puede no ser estrictamente necesaria si el token se elimina localmente.
+      await authServices.logout(); 
     } catch (error) {
-      console.error("Error al cerrar sesión:", error);
+      console.error("Error al cerrar sesión en el backend:", error);
+      // Aquí podrías mostrar un mensaje de error al usuario si la llamada al backend falla
+      // Aunque el logout local y la redirección se ejecutarán de todas formas.
     } finally {
-      dispatch(logout());
+      // Disparamos la acción 'logout' de authSlice.
+      // Esta acción limpia el estado de auth en Redux y el token de localStorage.
+      dispatch(logout()); 
+      
+      // Además, disparamos la acción 'clearLocalCart' del cartSlice.
+      // Esto limpia el carrito del estado de Redux y elimina el guest_id de localStorage.
+      dispatch(clearLocalCart());
+
+      // Redirige al usuario a la página de login
       navigate("/login");
     }
   };
@@ -66,7 +85,7 @@ function Navbar() {
           </ul>
 
           <Link
-            to="/checkout"
+            to="/CarritoPage" // Asegúrate de que esta ruta lleve a tu CarritoPage/Checkout
             className="btn btn-outline-light me-3 btn-sm d-flex align-items-center position-relative"
             style={{
               minWidth: "120px",
@@ -101,7 +120,8 @@ function Navbar() {
                 }}
               >
                 <i className="bi bi-person-fill me-2"></i>
-                <span className="text-white">{usuario.nombre}</span>
+                {/* Asumimos que usuario.nombre tiene el nombre a mostrar */}
+                <span className="text-white">{usuario.nombre || usuario.email || 'Usuario'}</span>
               </button>
               <ul className="dropdown-menu dropdown-menu-end bg-light border-0 shadow-sm">
                 <li>

@@ -2,15 +2,17 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { logout } from "../../redux/authSlice";
-import authServices from "../../services/authService";
+import { logout } from "../../redux/authSlice"; // Importa la acción logout del authSlice
+import authServices from "../../services/authService"; // Importa el servicio de autenticación
 
 export default function SidebarAdmin() {
   const [isGestionOpen, setIsGestionOpen] = useState(false);
   const [isConfiguracionOpen, setIsConfiguracionOpen] = useState(false);
   const [isUsuariosOpen, setIsUsuariosOpen] = useState(false);
-  const usuario = useSelector((state) => state.auth.usuario);
 
+  // Accedemos directamente al objeto 'user' del estado de autenticación de Redux
+  const user = useSelector((state) => state.auth.user); 
+  // Accedemos al nombre del rol para las comparaciones de permisos
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -20,12 +22,13 @@ export default function SidebarAdmin() {
 
   const handleLogout = async () => {
     try {
-      await authServices.logout();
+      await authServices.logout(); // Llama al servicio para cerrar sesión en el backend
     } catch (error) {
-      console.error("Error al cerrar sesión:", error);
+      console.error("Error al cerrar sesión en el backend:", error);
+      // Aunque haya un error en el backend, procedemos a limpiar el estado local
     } finally {
-      dispatch(logout());
-      navigate("/login");
+      dispatch(logout()); // Despacha la acción de logout para limpiar el estado de Redux y localStorage
+      navigate("/login"); // Redirige al usuario a la página de login
     }
   };
 
@@ -38,10 +41,10 @@ export default function SidebarAdmin() {
         <i className="bi bi-gear-fill me-2 fs-5"></i>
         <h4 className="text-center mb-0 fw-bold">Admin Panel</h4>
       </div>
-      {usuario && (
+      {user && ( // Usamos 'user' en lugar de 'usuario' para consistencia con Redux
         <div className="d-flex align-items-center justify-content-center mb-3">
           <i className="bi bi-person-circle-fill me-2 fs-6 text-secondary"></i>
-          <p className="text-white mb-0 small text-center">{usuario.nombre}</p>
+          <p className="text-white mb-0 small text-center">{user.email}</p>
         </div>
       )}
       <hr className="text-secondary mb-3" />
@@ -65,7 +68,8 @@ export default function SidebarAdmin() {
               } ms-auto`}
             ></i>
           </div>
-          <div className={`collapse ${isGestionOpen ? "show" : ""} ms-3`}>
+          <div className="collapse show ms-3">
+            {/* Siempre visible, no depende del rol */}
             <Link className="nav-link text-white py-1" to="/admin/productos">
               Productos
             </Link>
@@ -91,12 +95,20 @@ export default function SidebarAdmin() {
             ></i>
           </div>
           <div className={`collapse ${isUsuariosOpen ? "show" : ""} ms-3`}>
-            {usuario?.rol === "SuperAdmin" && (
+            
+            {(user?.rol === "Admin" || user?.rol === "SuperAdmin") && (
+              <Link className="nav-link text-white py-1" to="/admin/usuarios-y-roles">
+                Usuarios y Roles
+              </Link>
+            )}
+            
+            {user?.rol === "SuperAdmin" && (
               <Link className="nav-link text-white py-1" to="/admin/usuarios/admin">
                 Admins
               </Link>
             )}
-            {usuario?.rol === "SuperAdmin" && (
+            
+            {user?.rol === "SuperAdmin" && (
               <Link className="nav-link text-white py-1" to="/admin/usuarios/roles">
                 Roles
               </Link>
@@ -146,6 +158,9 @@ export default function SidebarAdmin() {
                 border: "none",
                 background: "transparent",
                 paddingLeft: "1rem",
+                cursor: "pointer", // Asegurar que tenga cursor de puntero
+                width: "100%", // Asegurar que ocupe todo el ancho
+                textAlign: "left" // Alinear el texto a la izquierda
               }}
             >
               <i className="bi bi-box-arrow-left me-2 fs-6"></i> Logout

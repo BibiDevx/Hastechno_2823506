@@ -1,4 +1,5 @@
 <?php
+use App\Http\Controllers\usuarioController;
 use App\Http\Controllers\adminController;
 use App\Http\Controllers\categoriaController;
 use App\Http\Controllers\clienteController;
@@ -107,12 +108,9 @@ Route::middleware(['auth:api', 'role:Admin'])->prefix('marcas')->group(function 
     Route::delete('/eliminar/{id}', [marcaController::class, 'destroy'])->where('id', '[0-9]+');
 });
 ///////////////////////////////////////////////////////////////////////
-Route::prefix('verProveedores')->group(function () {
-    Route::get('/', [proveedorController::class, 'index']);
-    Route::get('/{id}', [proveedorController::class, 'show'])->where('id', '[0-9]+');
-});
-
 Route::middleware(['auth:api', 'role:Admin'])->prefix('proveedores')->group(function () {
+    Route::get('/verProveedores', [proveedorController::class, 'index']);
+    Route::get('/proveedores/{id}', [proveedorController::class, 'show'])->where('id', '[0-9]+');
     Route::post('/registrar', [proveedorController::class, 'store']);
     Route::patch('/actualizar/{id}', [proveedorController::class, 'updatePartial'])->where('id', '[0-9]+');
     Route::delete('/eliminar/{id}', [proveedorController::class, 'destroy'])->where('id', '[0-9]+');
@@ -122,10 +120,21 @@ Route::middleware(['auth:api', 'role:Admin'])->prefix('proveedores')->group(func
 Route::get('/pedido/{idPedido}/productos', [PedidoProductoController::class, 'index']);
 Route::post('/pedido-producto', [PedidoProductoController::class, 'store']);
 // Carrito
-Route::get('/carrito/{idCliente}', [CarritoController::class, 'index']);
+Route::get('/carrito', [CarritoController::class, 'index']);
 Route::post('/carrito', [CarritoController::class, 'store']);
-Route::put('/carrito/{id}', [CarritoController::class, 'update']);
-Route::delete('/carrito/{id}', [CarritoController::class, 'destroy']);
+Route::patch('/carrito/{idCarrito}', [CarritoController::class, 'update']);
+Route::delete('/carrito/{idCarrito}', [CarritoController::class, 'destroy']);
+Route::post('/carrito/vaciar', [CarritoController::class, 'clearCart']);
+
+// Ruta para fusionar el carrito de invitado al iniciar sesión
+// ESTA RUTA SÍ DEBE ESTAR PROTEGIDA y solo es para usuarios autenticados
+Route::middleware(['auth:api','role:Cliente'])->group(function () {
+    Route::post('/carrito/fusionar', [CarritoController::class, 'mergeGuestCart']);
+    // Opcional: Si quieres que las operaciones de carrito de USUARIOS logueados *solo* se hagan
+    // a través de rutas con autenticación obligatoria, podrías duplicar las de arriba
+    // y ponerlas aquí con auth:api y eliminar el chequeo de guestId en los métodos del controlador.
+    // Pero la implementación actual del controlador es más flexible.
+});
 
 // Pedidos
 Route::get('/pedidos/{idCliente}', [PedidoController::class, 'index']);
@@ -135,3 +144,30 @@ Route::get('/pedido/{id}', [PedidoController::class, 'show']);
 // Factura
 Route::get('/factura/pedido/{idPedido}', [FacturaController::class, 'show']);
 Route::post('/factura', [FacturaController::class, 'store']);
+
+Route::middleware(['auth:api', 'role:SuperAdmin'])->group(function () {
+
+    // Rutas para la gestión de USUARIOS y sus ROLES (operaciones sobre la tabla 'usuario')
+
+    // Obtener la lista completa de usuarios con sus roles asociados
+    // Esta ruta es la que usará `userService.getAllUsersWithRoles`
+    Route::get('/usuarios-con-roles', [UsuarioController::class, 'indexUsersWithRoles']);
+
+    // Actualizar el rol de un usuario específico
+    // Esta ruta es la que usará `userService.updateUserRole`
+    Route::patch('/usuarios/{idUsuario}/actualizar-rol', [UsuarioController::class, 'updateRol'])
+        ->where('idUsuario', '[0-9]+');
+
+    // Obtener los detalles de un usuario específico por ID
+    // Esta ruta es la que usará `userService.getUserById` (si lo implementas en el frontend)
+    Route::get('/usuarios/{idUsuario}', [UsuarioController::class, 'show'])
+        ->where('idUsuario', '[0-9]+');
+
+    // Eliminar un usuario específico por ID
+    // Esta ruta es la que usará `userService.deleteUser`
+    Route::delete('/usuarios/{idUsuario}', [UsuarioController::class, 'destroy'])
+        ->where('idUsuario', '[0-9]+');
+
+    // ... aquí irían también tus otras rutas protegidas por SuperAdmin
+    // como las de roles (control/roles/...) y las de admin (users/...)
+});

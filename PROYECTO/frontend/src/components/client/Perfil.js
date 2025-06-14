@@ -1,48 +1,66 @@
-import { useEffect, useState } from "react";
+// src/pages/client/Perfil.js
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { logout } from "../../redux/authSlice";
+import { clearLocalCart } from "../../redux/cartSlice";
 import authServices from "../../services/authService";
-import clientService from "../../services/clientService"; // Importa clientService
-import "bootstrap/dist/css/bootstrap.min.css"; // Asegúrate de tener Bootstrap instalado
+import clientService from "../../services/clientService";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 const Perfil = () => {
   const [user, setUser] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const fetchClientProfile = async () => {
       setLoading(true);
+      setError("");
       try {
-        const data = await authServices.getProfile();
-        setUser(data.data); // Asumiendo que la info del cliente está en data.data.cliente
+        // ✅ authServices.getProfile() ahora nos devuelve directamente el objeto de usuario/perfil.
+        const userProfileData = await authServices.getProfile();
+        setUser(userProfileData); // ✅ Asignamos directamente el objeto recibido
         setError("");
       } catch (err) {
+        console.error("Error al obtener el perfil:", err);
         setError(err.message || "No se pudo obtener el perfil del cliente.");
+        setUser(null);
       } finally {
         setLoading(false);
       }
     };
 
     fetchClientProfile();
-  }, []);
+  }, [dispatch]);
 
   const handleEditClick = () => {
-    navigate("/editar-perfil"); // Ruta específica para editar el perfil del cliente
+    navigate("/editar-perfil");
   };
 
   const handleDeleteClick = async () => {
     const confirmDelete = window.confirm(
-      "¿Estás seguro de que quieres eliminar tu perfil? Esta acción no se puede deshacer."
+      "¿Estás seguro de que quieres eliminar tu perfil? Esta acción no se puede deshacer y te desconectará de tu cuenta."
     );
 
     if (confirmDelete) {
       try {
-        await clientService.deleteProfile(); // Usa clientService para clientes
+        setLoading(true);
+        await clientService.deleteProfile();
+        
+        dispatch(logout());
+        dispatch(clearLocalCart());
+
+        alert("Tu perfil ha sido eliminado exitosamente.");
         navigate("/login");
-      } catch (error) {
-        console.error("Error al eliminar el perfil:", error);
-        alert(error.message || "Hubo un error al intentar eliminar el perfil.");
+      } catch (err) {
+        console.error("Error al eliminar el perfil:", err);
+        alert(err.message || "Hubo un error al intentar eliminar el perfil.");
+        setError(err.message || "Error al eliminar el perfil.");
+      } finally {
+        setLoading(false);
       }
     }
   };
@@ -59,11 +77,22 @@ const Perfil = () => {
   }
 
   if (error) {
-    return <div className="container mt-5"><p className="alert alert-danger">{error}</p></div>;
+    return (
+      <div className="container mt-5">
+        <p className="alert alert-danger">{error}</p>
+      </div>
+    );
   }
 
-  if (!user) {
-    return <div className="container mt-5"><p className="text-muted">No se ha encontrado información del cliente.</p></div>;
+  // ✅ La condición se mantiene, pero ahora 'user' debería ser un objeto directamente
+  // si la llamada fue exitosa y la data existe.
+  if (!user || !user.cliente) {
+    return (
+      <div className="container mt-5">
+        <p className="text-muted">No se ha encontrado información del cliente o no estás logueado como cliente.</p>
+        <p className="text-muted">Por favor, asegúrate de haber iniciado sesión con una cuenta de cliente.</p>
+      </div>
+    );
   }
 
   return (
@@ -76,7 +105,7 @@ const Perfil = () => {
           <ul className="list-group list-group-flush mb-3">
             <li className="list-group-item d-flex justify-content-between align-items-center">
               <strong className="text-secondary">Email:</strong>
-              <span>{user.email}</span> {/* Asumiendo relación usuario */}
+              <span>{user.email}</span>
             </li>
             <li className="list-group-item d-flex justify-content-between align-items-center">
               <strong className="text-secondary">Nombre:</strong>
@@ -98,15 +127,18 @@ const Perfil = () => {
               <strong className="text-secondary">Teléfono:</strong>
               <span>{user.cliente.telefonoCliente}</span>
             </li>
-            {/* ... más información del cliente ... */}
           </ul>
 
           <div className="d-flex justify-content-end gap-2">
             <button className="btn btn-primary rounded-pill fw-semibold" onClick={handleEditClick}>
               <i className="bi bi-pencil-fill me-2"></i> Editar Perfil
             </button>
-            <button className="btn btn-danger rounded-pill fw-semibold" onClick={handleDeleteClick}>
-              <i className="bi bi-trash-fill me-2"></i> Eliminar Perfil
+            <button 
+              className="btn btn-danger rounded-pill fw-semibold" 
+              onClick={handleDeleteClick}
+              disabled={loading}
+            >
+              <i className="bi bi-trash-fill me-2"></i> {loading ? "Eliminando..." : "Eliminar Perfil"}
             </button>
           </div>
         </div>

@@ -43,5 +43,7 @@ class Producto extends Model
     {
         return $this->hasMany(PedidoProducto::class, 'idProducto');
     }
-
+  protected $casts = [
+        'disponibilidad' => 'boolean', // <--- ¡AÑADE ESTA LÍNEA!
+    ];
 }

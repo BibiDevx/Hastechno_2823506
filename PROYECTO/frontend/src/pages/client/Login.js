@@ -1,76 +1,93 @@
+// src/components/Login.js
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom"; // Importa Link
-import authServices from "../../services/authService";
-import { useDispatch } from "react-redux";
-import { loginSuccess, loginFailure, clearError } from "../../redux/authSlice";
+import { useNavigate, Link } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { loginUser, clearAuthError } from "../../redux/authSlice";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  
+  const { status: authStatus, error: authError } = useSelector((state) => state.auth);
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    dispatch(clearError());
+    dispatch(clearAuthError());
 
     try {
-      const { access_token, user } = await authServices.login(email, password);
+      const resultAction = await dispatch(loginUser({ email, password })).unwrap();
 
-      if (access_token && user) {
-        dispatch(loginSuccess({ user, access_token }));
-        navigate(user.rol === "Admin" || user.rol === "SuperAdmin" ? "/admin" : "/perfil");
+      // ✅ CORRECCIÓN CLAVE AQUÍ: Accedemos directamente a 'rol'
+      // Esto ahora tomará la cadena "SuperAdmin", "Admin" o "Cliente" directamente.
+      const userRoleName = resultAction.user?.rol; 
+      
+      if (userRoleName === "Admin" || userRoleName === "SuperAdmin") {
+        navigate("/admin");
       } else {
-        setError("Credenciales inválidas o no se recibió información del usuario.");
-        dispatch(loginFailure("Credenciales inválidas o no se recibió información del usuario."));
+        navigate("/perfil");
       }
+      
     } catch (err) {
-      setError("Usuario o contraseña incorrectos");
-      dispatch(loginFailure("Usuario o contraseña incorrectos"));
+      console.error("Login failed: Error captured:", err);
+      if (err.response) { 
+        console.error("Server response:", err.response.data);
+        console.error("HTTP Status:", err.response.status);
+      } else if (err.request) {
+        console.error("No response received from server:", err.request);
+      } else {
+        console.error("Error setting up request:", err.message);
+      }
     }
   };
 
   return (
-    <div className="container mt-5" style={{ maxWidth: '450px' }}> {/* Centrar y limitar ancho */}
+    <div className="container mt-5" style={{ maxWidth: '450px' }}>
       <div className="row justify-content-center">
-        <div className="col-md-12"> {/* Ocupar todo el ancho del contenedor */}
-          <div className="card shadow p-4 border-0 rounded-lg"> {/* Tarjeta con sombra y sin bordes */}
-            <h2 className="text-center mb-4 text-primary fw-bold">Iniciar Sesión</h2> {/* Título centrado y con estilo */}
-            {error && <div className="alert alert-danger mb-3">{error}</div>} {/* Alerta de error */}
+        <div className="col-md-12">
+          <div className="card shadow p-4 border-0 rounded-lg">
+            <h2 className="text-center mb-4 text-primary fw-bold">Iniciar Sesión</h2>
+            {authError && <div className="alert alert-danger mb-3">{authError}</div>}
             <form onSubmit={handleSubmit}>
               <div className="mb-3">
-                <label htmlFor="email" className="form-label fw-semibold">Correo electrónico</label> {/* Etiqueta seminegrita */}
+                <label htmlFor="email" className="form-label fw-semibold">Correo electrónico</label>
                 <input
                   type="email"
-                  className="form-control form-control-lg" 
+                  className="form-control form-control-lg"
                   id="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={authStatus === 'loading'} 
                 />
               </div>
               <div className="mb-3">
-                <label htmlFor="password" className="form-label fw-semibold">Contraseña</label> {/* Etiqueta seminegrita */}
+                <label htmlFor="password" className="form-label fw-semibold">Contraseña</label>
                 <input
                   type="password"
-                  className="form-control form-control-lg" 
+                  className="form-control form-control-lg"
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  disabled={authStatus === 'loading'} 
                 />
               </div>
-              <button type="submit" className="btn btn-primary btn-lg w-100 rounded-pill fw-bold"> {/* Botón primario ancho y redondeado */}
-                Ingresar
+              <button
+                type="submit"
+                className="btn btn-primary btn-lg w-100 rounded-pill fw-bold"
+                disabled={authStatus === 'loading'} 
+              >
+                {authStatus === 'loading' ? 'Ingresando...' : 'Ingresar'}
               </button>
             </form>
             <div className="mt-3 text-center">
-              <Link to="/recuperar" className="text-muted">¿Olvidaste tu contraseña?</Link> {/* Enlace con estilo */}
+              <Link to="/recuperar" className="text-muted">¿Olvidaste tu contraseña?</Link>
             </div>
             <div className="mt-2 text-center">
-              ¿No tienes cuenta? <Link to="/registro" className="text-primary fw-semibold">Regístrate aquí</Link> {/* Enlace con estilo */}
+              ¿No tienes cuenta? <Link to="/registro" className="text-primary fw-semibold">Regístrate aquí</Link>
             </div>
           </div>
         </div>

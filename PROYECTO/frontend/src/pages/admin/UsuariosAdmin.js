@@ -1,12 +1,14 @@
 // src/components/UsuariosAdmin.js
 import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { Modal, Button } from "react-bootstrap"; // Importa componentes de Modal y Button de react-bootstrap
 import adminService from "../../services/adminService"; // Asegúrate de que la ruta sea correcta
 
 export default function UsuariosAdmin() {
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState(""); // "editar" o "agregar"
 
+  // Estado para los datos del formulario de administrador
   const [formData, setFormData] = useState({
     // Campos del modelo Admin
     idAdmin: null,
@@ -18,12 +20,17 @@ export default function UsuariosAdmin() {
     idUsuario: null,
     email: "",
     password: "",
-    c_password: "", // ¡NUEVO CAMPO! Para la confirmación de contraseña en el backend
+    c_password: "", // Para la confirmación de contraseña en el backend
   });
 
   const [admins, setAdmins] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Para la carga inicial y operaciones
+  const [isSaving, setIsSaving] = useState(false); // Nuevo estado para indicar si se está guardando/eliminando
   const [error, setError] = useState(null);
+
+  // Estados para el modal de confirmación de eliminación
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [adminToDeleteId, setAdminToDeleteId] = useState(null);
 
   // Función para cargar los administradores
   const fetchAdmins = async () => {
@@ -34,7 +41,6 @@ export default function UsuariosAdmin() {
       if (response.success && Array.isArray(response.data)) {
         setAdmins(response.data);
       } else {
-        // Mejorar el manejo si la respuesta no es una lista válida
         setError("La API no devolvió una lista de administradores válida.");
         setAdmins([]); // Asegurarse de que admins sea un array vacío
       }
@@ -65,7 +71,7 @@ export default function UsuariosAdmin() {
         cedulaAdmin: admin.cedulaAdmin,
         telefonoAdmin: admin.telefonoAdmin,
         idUsuario: admin.idUsuario,
-        email: admin.usuario ? admin.usuario.email : "", // Conservamos esta lógica para leer el email del objeto 'usuario' anidado
+        email: admin.usuario ? admin.usuario.email : "", // Leer el email del objeto 'usuario' anidado
         password: "", // Siempre en blanco para que el usuario ingrese una nueva si desea
         c_password: "", // Resetear también la confirmación
       });
@@ -83,7 +89,7 @@ export default function UsuariosAdmin() {
       });
     }
     setShowModal(true);
-    setError(null);
+    setError(null); // Limpiar errores previos al abrir el modal
   };
 
   const handleCloseModal = () => {
@@ -99,7 +105,7 @@ export default function UsuariosAdmin() {
       password: "",
       c_password: "",
     });
-    setError(null);
+    setError(null); // Limpiar errores al cerrar el modal
   };
 
   const handleChange = (e) => {
@@ -122,7 +128,7 @@ export default function UsuariosAdmin() {
       setError("Por favor, ingrese un correo electrónico válido.");
       return;
     }
-    // Añadida validación de teléfono para 10 dígitos, si tu backend lo exige
+    // Validación de teléfono para 10 dígitos (ajusta según tu necesidad)
     if (!/^\d{10}$/.test(formData.telefonoAdmin)) {
       setError("El teléfono debe contener exactamente 10 dígitos numéricos.");
       return;
@@ -138,22 +144,26 @@ export default function UsuariosAdmin() {
         setError("La contraseña y la confirmación de contraseña no coinciden.");
         return;
       }
+    } else { // Validaciones para 'editar'
+      if (formData.password.trim() !== '' && formData.password !== formData.c_password) {
+        setError("La nueva contraseña y su confirmación no coinciden.");
+        return;
+      }
     }
 
+    setIsSaving(true); // Activar estado de guardado
+    setError(null); // Limpiar errores antes de intentar guardar
+
     try {
-      setLoading(true);
       let response;
       const dataToSend = { ...formData };
 
       if (modalType === "agregar") {
-        // Para agregar, enviamos todos los datos, incluyendo la contraseña y c_password
-        // Asegúrate de que adminService.registerAdmin acepte estos campos
         response = await adminService.registerAdmin(dataToSend);
 
-        // *** CAMBIO CRÍTICO AQUÍ: Ajustar la forma de acceder a los datos de la respuesta
-        // Tu backend devuelve { message: ..., admin: { ... } }
         if (response.admin) {
           setAdmins((prevAdmins) => [...prevAdmins, response.admin]);
+          alert("Administrador agregado correctamente."); // Feedback de éxito
         } else {
           throw new Error("Respuesta inesperada del servidor al registrar el administrador.");
         }
@@ -161,93 +171,104 @@ export default function UsuariosAdmin() {
         // modalType === "editar"
         if (!formData.idAdmin) {
           setError("ID de administrador no válido para editar.");
-          setLoading(false);
+          setIsSaving(false); 
           return;
         }
 
-        // Eliminar IDs que no deben ir en el cuerpo de la petición PATCH para edición
+        // Eliminar IDs y c_password si no se van a usar en el PATCH para edición
         delete dataToSend.idAdmin;
-        delete dataToSend.idUsuario; // No se envía idUsuario en el PATCH para el admin
-
-        // Si la contraseña o c_password están vacías en edición, no las enviamos para que el backend no las actualice.
-        // Si el usuario quiere cambiarla, debe llenar AMBAS.
-        if (!dataToSend.password) {
+        delete dataToSend.idUsuario; 
+        if (!dataToSend.password) { // Si no se provee nueva contraseña
           delete dataToSend.password;
-          delete dataToSend.c_password; // Asegurarse de no enviar c_password si no se envía password
-        } else if (dataToSend.password !== dataToSend.c_password && dataToSend.password.trim() !== '') {
-          setError("La nueva contraseña y su confirmación no coinciden.");
-          setLoading(false);
-          return;
-        }
-
-
-        // Para la edición, es posible que tu API de actualización (updateAdmin) no requiera 'c_password'
-        // Por lo tanto, lo eliminamos si no se va a usar para la actualización de contraseña
-        if (!dataToSend.password) {
-             delete dataToSend.c_password; // Solo enviar c_password si password también se envía
+          delete dataToSend.c_password; 
         }
 
         response = await adminService.updateAdmin(formData.idAdmin, dataToSend);
-        // La respuesta del updateAdmin debería ser el objeto admin actualizado directamente
+        
         // Asumo que tu updateAdmin en backend devuelve el admin actualizado en 'response.data' directamente
+        // o si sigue BaseController, en response.data.data
+        const updatedAdmin = response.data || response; // Adaptar según la estructura de tu servicio
+        
         setAdmins((prevAdmins) =>
           prevAdmins.map((admin) =>
-            admin.idAdmin === response.data.idAdmin ? response.data : admin
+            admin.idAdmin === updatedAdmin.idAdmin ? updatedAdmin : admin
           )
         );
+        alert("Administrador actualizado correctamente."); // Feedback de éxito
       }
 
       handleCloseModal(); // Cerrar modal al guardar con éxito
-      setError(null); // Limpiar errores si el guardado fue exitoso
     } catch (err) {
       console.error("Error al guardar el administrador:", err);
       let errorMessage =
         err.response?.data?.message ||
         "Error al guardar el administrador. Por favor, intente de nuevo.";
       if (err.response?.data?.errors) {
-        // Si Laravel devuelve errores de validación, mostrarlos
         const validationErrors = Object.values(err.response.data.errors)
           .flat()
           .join(" ");
-        errorMessage += " " + validationErrors;
-      } else if (err.response?.data?.error) { // Tu registerAdmin devuelve 'error' en lugar de 'errors'
+        errorMessage = "Errores de validación: " + validationErrors;
+      } else if (err.response?.data?.error) { 
           if (typeof err.response.data.error === 'object') {
               const validationErrors = Object.values(err.response.data.error).flat().join(' ');
               errorMessage = "Errores de validación: " + validationErrors;
           } else {
-              errorMessage = err.response.data.error; // Si es solo un mensaje de error
+              errorMessage = err.response.data.error; 
           }
       }
       setError(errorMessage);
     } finally {
-      setLoading(false);
+      setIsSaving(false); // Desactivar estado de guardado
+      setLoading(false); // Asegurarse de que se resetea el loading
     }
   };
 
-  const handleDelete = async (id) => {
-    if (
-      window.confirm(
-        "¿Estás seguro de que deseas eliminar este administrador y su usuario asociado? Esta acción es irreversible."
-      )
-    ) {
-      try {
-        setLoading(true);
-        await adminService.deleteAdmin(id);
-        setAdmins((prevAdmins) => prevAdmins.filter((admin) => admin.idAdmin !== id));
+  // Manejador para mostrar el modal de confirmación de eliminación
+  const confirmDelete = (id) => {
+    setAdminToDeleteId(id);
+    setShowDeleteConfirmModal(true);
+  };
+
+  // Manejador para la eliminación confirmada
+  const handleDeleteConfirmed = async () => {
+    setShowDeleteConfirmModal(false); // Cerrar modal de confirmación
+    if (!adminToDeleteId) return;
+
+    setIsSaving(true); // Activar estado de guardado/eliminación
+    setError(null); // Limpiar errores previos
+
+    try {
+      const response = await adminService.deleteAdmin(adminToDeleteId);
+      if (response.success) {
+        setAdmins((prevAdmins) => prevAdmins.filter((admin) => admin.idAdmin !== adminToDeleteId));
         setError(null);
-      } catch (err) {
-        console.error("Error al eliminar el administrador:", err);
-        setError(err.response?.data?.message || "Error al eliminar el administrador.");
-      } finally {
-        setLoading(false);
+        alert("Administrador eliminado correctamente."); // Feedback de éxito
+      } else {
+        throw new Error(response.message || "Fallo al eliminar el administrador.");
       }
+    } catch (err) {
+      console.error("Error al eliminar el administrador:", err);
+      setError(err.response?.data?.message || "Error al eliminar el administrador.");
+    } finally {
+      setIsSaving(false); // Desactivar estado de guardado/eliminación
+      setLoading(false); // Asegurarse de que se resetea el loading
+      setAdminToDeleteId(null); // Limpiar ID del admin a eliminar
     }
   };
 
+  // Renderizado condicional para el estado de carga inicial
   if (loading && !admins.length && !error) {
-    return <div className="container mt-4">Cargando administradores...</div>;
+    return (
+      <div className="container mt-4 text-center">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Cargando administradores...</span>
+        </div>
+        <p className="mt-2 text-muted">Cargando lista de administradores...</p>
+      </div>
+    );
   }
 
+  // Renderizado condicional para el error global (no del modal)
   if (error && !showModal && !loading) {
     return <div className="container mt-4 alert alert-danger">{error}</div>;
   }
@@ -256,64 +277,72 @@ export default function UsuariosAdmin() {
     <div className="container mt-4">
       <h2 className="mb-4">Administrar Administradores</h2>
 
-      <button className="btn btn-success mb-3" onClick={() => handleShowModal("agregar")}>
-        Agregar Administrador
+     
+      <button 
+        className="btn btn-success mb-3" 
+        onClick={() => handleShowModal("agregar")}
+      >
+        <i className="bi bi-person-plus-fill me-2"></i> Agregar Administrador
       </button>
 
-      <table className="table table-bordered">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Apellido</th>
-            <th>Cédula</th>
-            <th>Correo</th>
-            <th>Teléfono</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {admins.length > 0 ? (
-            admins.map((admin) => (
-              <tr key={admin.idAdmin}>
-                <td>{admin.idAdmin}</td>
-                <td>{admin.nombreAdmin}</td>
-                <td>{admin.apellidoAdmin}</td>
-                <td>{admin.cedulaAdmin}</td>
-                <td>{admin.usuario ? admin.usuario.email : "N/A"}</td>
-                <td>{admin.telefonoAdmin}</td>
-                <td>
-                  <button
-                    className="btn btn-primary me-2"
-                    onClick={() => handleShowModal("editar", admin)}
-                  >
-                    Editar
-                  </button>
-                  <button
-                    className="btn btn-danger"
-                    onClick={() => handleDelete(admin.idAdmin)}
-                  >
-                    Eliminar
-                  </button>
+      <div className="table-responsive"> 
+        <table className="table table-bordered table-hover shadow-sm"> 
+          <thead className="table-dark">
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Apellido</th>
+              <th>Cédula</th>
+              <th>Correo</th>
+              <th>Teléfono</th>
+              <th className="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Array.isArray(admins) && admins.length > 0 ? (
+              admins.map((admin) => (
+                <tr key={admin.idAdmin}>
+                  <td>{admin.idAdmin}</td>
+                  <td>{admin.nombreAdmin}</td>
+                  <td>{admin.apellidoAdmin}</td>
+                  <td>{admin.cedulaAdmin}</td>
+                  <td>{admin.usuario ? admin.usuario.email : "N/A"}</td>
+                  <td>{admin.telefonoAdmin}</td>
+                  <td className="text-center">
+                    <button
+                      className="btn btn-primary btn-sm me-2"
+                      onClick={() => handleShowModal("editar", admin)}
+                      disabled={isSaving} // Deshabilitar durante el guardado/eliminación
+                    >
+                      <i className="bi bi-pencil-fill me-1"></i> Editar
+                    </button>
+                    <button
+                      className="btn btn-danger btn-sm"
+                      onClick={() => confirmDelete(admin.idAdmin)} // Usa el nuevo manejador para el modal de confirmación
+                      disabled={isSaving} // Deshabilitar durante el guardado/eliminación
+                    >
+                      <i className="bi bi-trash-fill me-1"></i> Eliminar
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="7" className="text-center py-4 text-muted"> 
+                  No se encontraron administradores.
                 </td>
               </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan="7" className="text-center">
-                No se encontraron administradores.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+            )}
+          </tbody>
+        </table>
+      </div>
 
-      {/* Modal */}
+      
       {showModal && (
-        <div className="modal fade show d-block" tabIndex="-1" role="dialog">
-          <div className="modal-dialog" role="document">
+        <div className="modal fade show d-block" tabIndex="-1" role="dialog" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered" role="document">
             <div className="modal-content">
-              <div className="modal-header">
+              <div className="modal-header bg-primary text-white">
                 <h5 className="modal-title">
                   {modalType === "agregar"
                     ? "Agregar Administrador"
@@ -321,8 +350,9 @@ export default function UsuariosAdmin() {
                 </h5>
                 <button
                   type="button"
-                  className="btn-close"
+                  className="btn-close btn-close-white"
                   onClick={handleCloseModal}
+                  disabled={isSaving} // Deshabilitar durante el guardado
                 ></button>
               </div>
               <div className="modal-body">
@@ -340,6 +370,7 @@ export default function UsuariosAdmin() {
                       value={formData.nombreAdmin}
                       onChange={handleChange}
                       required
+                      disabled={isSaving}
                     />
                   </div>
                   <div className="mb-3">
@@ -354,6 +385,7 @@ export default function UsuariosAdmin() {
                       value={formData.apellidoAdmin}
                       onChange={handleChange}
                       required
+                      disabled={isSaving}
                     />
                   </div>
                   <div className="mb-3">
@@ -368,6 +400,7 @@ export default function UsuariosAdmin() {
                       value={formData.cedulaAdmin}
                       onChange={handleChange}
                       required
+                      disabled={isSaving}
                     />
                   </div>
                   <div className="mb-3">
@@ -382,6 +415,7 @@ export default function UsuariosAdmin() {
                       value={formData.email}
                       onChange={handleChange}
                       required
+                      disabled={isSaving}
                     />
                   </div>
                   <div className="mb-3">
@@ -396,6 +430,7 @@ export default function UsuariosAdmin() {
                       value={formData.telefonoAdmin}
                       onChange={handleChange}
                       required
+                      disabled={isSaving}
                     />
                   </div>
                   <div className="mb-3">
@@ -412,9 +447,10 @@ export default function UsuariosAdmin() {
                       value={formData.password}
                       onChange={handleChange}
                       required={modalType === "agregar"}
+                      disabled={isSaving}
                     />
                   </div>
-                  {/* Campo de confirmación de contraseña, solo para agregar o cuando se quiere cambiar en edición */}
+                 
                   {(modalType === "agregar" || formData.password.trim() !== '') && (
                     <div className="mb-3">
                       <label htmlFor="c_password" className="form-label">
@@ -428,32 +464,61 @@ export default function UsuariosAdmin() {
                         value={formData.c_password}
                         onChange={handleChange}
                         required={modalType === "agregar" || formData.password.trim() !== ''}
+                        disabled={isSaving}
                       />
                     </div>
                   )}
                 </form>
               </div>
               <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
+                <Button
+                  variant="secondary"
+                  className="rounded-pill fw-semibold me-2"
                   onClick={handleCloseModal}
+                  disabled={isSaving}
                 >
-                  Cerrar
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
+                  <i className="bi bi-x-circle-fill me-2"></i> Cerrar
+                </Button>
+                <Button
+                  variant="primary"
+                  className="rounded-pill fw-semibold"
                   onClick={handleSaveAdmin}
-                  disabled={loading}
+                  disabled={isSaving}
                 >
-                  {loading ? "Guardando..." : "Guardar"}
-                </button>
+                  <i className="bi bi-save-fill me-2"></i> {isSaving ? "Guardando..." : "Guardar"}
+                </Button>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      <Modal show={showDeleteConfirmModal} onHide={() => setShowDeleteConfirmModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title className="text-danger fw-bold"><i className="bi bi-exclamation-triangle-fill me-2"></i> Confirmar Eliminación</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          ¿Estás seguro de que deseas eliminar este administrador y su usuario asociado? Esta acción es irreversible.
+        </Modal.Body>
+        <Modal.Footer className="justify-content-end">
+          <Button 
+            variant="secondary" 
+            className="rounded-pill fw-semibold" 
+            onClick={() => setShowDeleteConfirmModal(false)}
+            disabled={isSaving}
+          >
+            Cerrar
+          </Button>
+          <Button 
+            variant="danger" 
+            className="rounded-pill fw-semibold" 
+            onClick={handleDeleteConfirmed}
+            disabled={isSaving}
+          >
+            <i className="bi bi-trash-fill me-1"></i> Eliminar
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }

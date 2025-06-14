@@ -15,17 +15,18 @@ class Carrito extends Model
     protected $fillable = [
         'idCliente',
         'idProducto',
-        'cantidad'
+        'cantidad',
+        'guest_id' // ¡NUEVO CAMPO!
     ];
 
     // Relaciones
     public function cliente()
     {
-        return $this->belongsTo(Cliente::class, 'idCliente');
+        return $this->belongsTo(Cliente::class, 'idCliente', 'idCliente');
     }
 
     public function producto()
     {
-        return $this->belongsTo(Producto::class, 'idProducto');
+        return $this->belongsTo(Producto::class, 'idProducto', 'idProducto');
     }
 }

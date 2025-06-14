@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import Home from "../pages/client/Home";
 import Marcas from "../pages/client/Marcas";
-import Checkout from "../pages/client/checkout";
+import CarritoPage from "../pages/client/CarritoPage";
 import Productos from "../pages/client/Productos";
 import RegistroCliente from "../pages/client/registro";
 import RecuperacionCliente from "../pages/client/recuperar";
@@ -17,7 +17,7 @@ export default function ClienteRoutes({ modoPrueba = false }) {
         <Route path="/marcas" element={<Marcas />} />
         <Route path="/productos" element={<Productos />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/CarritoPage" element={<CarritoPage />} />
         <Route path="/pago" element={<Pago />} />
         <Route path="/registro" element={<RegistroCliente />} />
         <Route path="/recuperar" element={<RecuperacionCliente />} />

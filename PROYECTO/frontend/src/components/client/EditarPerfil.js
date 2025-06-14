@@ -1,8 +1,9 @@
+// src/pages/client/EditarPerfil.js
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import authServices from "../../services/authService";
-import clientService from "../../services/clientService"; // Importa clientService
-import "bootstrap/dist/css/bootstrap.min.css";
+import authServices from "../../services/authService"; // Para obtener el perfil
+import clientService from "../../services/clientService"; // Para actualizar el perfil del cliente
+import "bootstrap/dist/css/bootstrap.min.css"; // Asegúrate de tener Bootstrap instalado  
 
 const EditarPerfil = () => {
   const [formData, setFormData] = useState({
@@ -11,35 +12,42 @@ const EditarPerfil = () => {
     cedulaCliente: "",
     direccion: "",
     telefonoCliente: "",
-    email: "",
+    email: "", // El email del usuario, no del cliente directamente
     password: "",
     c_password: "",
   });
   const [error, setError] = useState("");
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false); // Nuevo estado para el botón de guardar
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProfile = async () => {
       setLoading(true);
+      setError(""); // Limpia errores anteriores al cargar
       try {
-        const response = await authServices.getProfile();
-        const user = response.data;
+        // ✅ CORRECCIÓN CLAVE AQUÍ: authServices.getProfile() ya devuelve el objeto user directamente
+        const user = await authServices.getProfile(); 
 
-        if (user.cliente) {
+        // Verificamos si el usuario y la relación 'cliente' existen
+        if (user && user.cliente) {
           setFormData({
             nombreCliente: user.cliente.nombreCliente || "",
             apellidoCliente: user.cliente.apellidoCliente || "",
             cedulaCliente: user.cliente.cedulaCliente || "",
             direccion: user.cliente.direccion || "",
             telefonoCliente: user.cliente.telefonoCliente || "",
-            email: user.email || "",
-            password: "",
+            email: user.email || "", // Accede al email directamente del objeto user
+            password: "", // No precargar contraseñas
             c_password: "",
           });
+        } else {
+            // Si no hay datos de usuario o cliente, es un error o el usuario no es un cliente
+            setError("No se encontraron datos de perfil de cliente. ¿Estás logueado como cliente?");
         }
       } catch (err) {
-        setError("No se pudo cargar el perfil para editar.");
+        console.error("Error al cargar el perfil para editar:", err);
+        setError(err.message || "No se pudo cargar el perfil para editar.");
       } finally {
         setLoading(false);
       }
@@ -54,17 +62,28 @@ const EditarPerfil = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(""); // Limpia errores al intentar enviar
 
     if (formData.password && formData.password !== formData.c_password) {
       return setError("Las contraseñas no coinciden.");
     }
-
+    
+    setIsSaving(true); // Activa el estado de guardado
     try {
-      await clientService.updateProfile(formData); // Usa clientService
+      // ✅ clientService.updateProfile() ahora recibe un objeto con todos los datos
+      // y se encarga de enviarlo al backend.
+      // Tu backend necesitará un controlador que reciba estos datos y los actualice.
+      // Lo que se envía aquí debe coincidir con lo que espera tu API de actualización de perfil de cliente.
+      await clientService.updateProfile(formData); 
+      
       alert("Perfil actualizado correctamente.");
-      navigate("/perfil");
+      navigate("/perfil"); // Redirige de vuelta al perfil
     } catch (err) {
-      setError("Error al actualizar el perfil.");
+      console.error("Error al actualizar el perfil:", err);
+      // El mensaje de error ya viene formateado desde clientService.updateProfile
+      setError(err.message || "Error al actualizar el perfil."); 
+    } finally {
+      setIsSaving(false); // Desactiva el estado de guardado
     }
   };
 
@@ -95,6 +114,7 @@ const EditarPerfil = () => {
                 id="nombreCliente"
                 value={formData.nombreCliente}
                 onChange={handleChange}
+                disabled={isSaving} // Deshabilitar durante el guardado
               />
             </div>
             <div className="mb-3">
@@ -106,6 +126,7 @@ const EditarPerfil = () => {
                 id="apellidoCliente"
                 value={formData.apellidoCliente}
                 onChange={handleChange}
+                disabled={isSaving} // Deshabilitar durante el guardado
               />
             </div>
             <div className="mb-3">
@@ -117,6 +138,7 @@ const EditarPerfil = () => {
                 id="cedulaCliente"
                 value={formData.cedulaCliente}
                 onChange={handleChange}
+                disabled={isSaving} // Deshabilitar durante el guardado
               />
             </div>
             <div className="mb-3">
@@ -128,7 +150,8 @@ const EditarPerfil = () => {
                 id="email"
                 value={formData.email}
                 onChange={handleChange}
-                readOnly // Opcional: si no quieres que el usuario cambie el email aquí
+                readOnly // El email generalmente no se cambia desde aquí
+                disabled={isSaving} // Deshabilitar durante el guardado
               />
             </div>
             <div className="mb-3">
@@ -140,6 +163,7 @@ const EditarPerfil = () => {
                 id="direccion"
                 value={formData.direccion}
                 onChange={handleChange}
+                disabled={isSaving} // Deshabilitar durante el guardado
               />
             </div>
             <div className="mb-3">
@@ -151,6 +175,7 @@ const EditarPerfil = () => {
                 id="telefonoCliente"
                 value={formData.telefonoCliente}
                 onChange={handleChange}
+                disabled={isSaving} // Deshabilitar durante el guardado
               />
             </div>
             <div className="mb-3">
@@ -163,6 +188,7 @@ const EditarPerfil = () => {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="Opcional: ingresa para cambiar"
+                disabled={isSaving} // Deshabilitar durante el guardado
               />
             </div>
             <div className="mb-3">
@@ -175,10 +201,15 @@ const EditarPerfil = () => {
                 value={formData.c_password}
                 onChange={handleChange}
                 placeholder="Opcional: repite la nueva contraseña"
+                disabled={isSaving} // Deshabilitar durante el guardado
               />
             </div>
-            <button type="submit" className="btn btn-primary w-100 rounded-pill fw-semibold">
-              <i className="bi bi-save-fill me-2"></i> Guardar Cambios
+            <button 
+              type="submit" 
+              className="btn btn-primary w-100 rounded-pill fw-semibold"
+              disabled={isSaving} // Deshabilitar el botón durante el guardado
+            >
+              <i className="bi bi-save-fill me-2"></i> {isSaving ? "Guardando..." : "Guardar Cambios"}
             </button>
           </form>
         </div>

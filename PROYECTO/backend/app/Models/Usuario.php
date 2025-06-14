@@ -46,6 +46,6 @@ class Usuario extends Authenticatable implements JWTSubject
     }
     public function esSuperAdmin()
     {
-        return $this->rol->nombreRol === 'SuperAdmin';
+        return $this->rol && $this->rol->nombreRol === 'SuperAdmin';
     }
 }
