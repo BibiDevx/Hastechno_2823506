@@ -1,0 +1,491 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Documentación de la API Estudiantes",
+        "description": "Esta es la documentación de la API CRUD de estudiantes.",
+        "contact": {
+            "email": "tu-correo@ejemplo.com"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://my-default-host.com",
+            "description": "Servidor principal"
+        }
+    ],
+    "paths": {
+        "/api/register": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Registro de usuario",
+                "operationId": "8a56853624e025573120a09a4c75d468",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "phone",
+                                    "language",
+                                    "password",
+                                    "c_password"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Juan Pérez"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "juan@email.com"
+                                    },
+                                    "phone": {
+                                        "type": "string",
+                                        "example": "3001234567"
+                                    },
+                                    "language": {
+                                        "type": "string",
+                                        "example": "English"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "12345678"
+                                    },
+                                    "c_password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "12345678"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Registro exitoso"
+                    },
+                    "422": {
+                        "description": "Error de validación"
+                    }
+                }
+            }
+        },
+        "/api/login": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Login de usuario",
+                "operationId": "a3b306d14572d1f4bd6c064b3233e7b8",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "juan@email.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "12345678"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login exitoso"
+                    },
+                    "401": {
+                        "description": "Credenciales inválidas"
+                    }
+                }
+            }
+        },
+        "/api/profile": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Obtener perfil del usuario",
+                "operationId": "d32e56b6274eb68e980da6d91fbe9fd8",
+                "responses": {
+                    "200": {
+                        "description": "Perfil del usuario autenticado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/logout": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Cerrar sesión",
+                "operationId": "fe8f3429cd6979b3b4517e186505f9f9",
+                "responses": {
+                    "200": {
+                        "description": "Sesión cerrada exitosamente"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/refresh": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Refrescar token",
+                "operationId": "2c27d311a2876560fcb5a754b556cdc5",
+                "responses": {
+                    "200": {
+                        "description": "Token renovado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/students": {
+            "get": {
+                "tags": [
+                    "Students"
+                ],
+                "summary": "Listar todos los estudiantes",
+                "operationId": "b63007187938697f2944072719bced89",
+                "responses": {
+                    "200": {
+                        "description": "Lista de estudiantes",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "students": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Student"
+                                            }
+                                        },
+                                        "status": {
+                                            "type": "integer",
+                                            "example": 200
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Students"
+                ],
+                "summary": "Crear un nuevo estudiante",
+                "operationId": "d1ee69e3791c9ff478ce5f1d7a60c162",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "phone",
+                                    "language"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Juan Pérez"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "example": "juan@email.com"
+                                    },
+                                    "phone": {
+                                        "type": "string",
+                                        "example": "3001234567"
+                                    },
+                                    "language": {
+                                        "type": "string",
+                                        "example": "Spanish"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Estudiante creado correctamente"
+                    },
+                    "400": {
+                        "description": "Error de validación"
+                    }
+                }
+            }
+        },
+        "/api/students/{id}": {
+            "get": {
+                "tags": [
+                    "Students"
+                ],
+                "summary": "Obtener un estudiante por ID",
+                "operationId": "e873822be7d73fdd62545b83b63d1fe4",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Estudiante encontrado"
+                    },
+                    "404": {
+                        "description": "Estudiante no encontrado"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Students"
+                ],
+                "summary": "Actualizar completamente un estudiante",
+                "operationId": "35dc79a87516f6f5319238e066553d97",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "phone",
+                                    "language"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string"
+                                    },
+                                    "phone": {
+                                        "type": "string"
+                                    },
+                                    "language": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Estudiante actualizado"
+                    },
+                    "400": {
+                        "description": "Error de validación"
+                    },
+                    "404": {
+                        "description": "Estudiante no encontrado"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Students"
+                ],
+                "summary": "Eliminar un estudiante",
+                "operationId": "4f544cb4dc3772328208fe067ff0a60a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Estudiante eliminado"
+                    },
+                    "404": {
+                        "description": "Estudiante no encontrado"
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "Students"
+                ],
+                "summary": "Actualizar parcialmente un estudiante",
+                "operationId": "0ac3ac120d14d9e52a03f591a4415f61",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string"
+                                    },
+                                    "phone": {
+                                        "type": "string"
+                                    },
+                                    "language": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Estudiante actualizado parcialmente"
+                    },
+                    "400": {
+                        "description": "Error de validación"
+                    },
+                    "404": {
+                        "description": "Estudiante no encontrado"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Student": {
+                "title": "Estudiante",
+                "required": [
+                    "name",
+                    "email",
+                    "phone",
+                    "language"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Juan Pérez"
+                    },
+                    "email": {
+                        "type": "string",
+                        "example": "juan@email.com"
+                    },
+                    "phone": {
+                        "type": "string",
+                        "example": "3001234567"
+                    },
+                    "language": {
+                        "type": "string",
+                        "example": "Spanish"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "description": "Usar JWT token",
+                "name": "Authorization",
+                "in": "header",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Auth",
+            "description": "Auth"
+        },
+        {
+            "name": "Students",
+            "description": "Students"
+        }
+    ]
+}
