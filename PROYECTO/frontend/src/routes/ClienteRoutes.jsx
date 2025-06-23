@@ -1,26 +1,21 @@
+// src/routes/ClienteRoutes.jsx
 import { Routes, Route } from "react-router-dom";
 import Home from "../pages/client/Home";
 import Marcas from "../pages/client/Marcas";
-import CarritoPage from "../pages/client/CarritoPage";
 import Productos from "../pages/client/Productos";
-import RegistroCliente from "../pages/client/registro";
-import RecuperacionCliente from "../pages/client/recuperar";
-import CheckoutPage from "../pages/client/CheckoutPage";
-import Login from "../pages/client/Login";
+
+// Las rutas de login, registro, recuperar, carrito y checkout
+// han sido movidas a App.js para una gestión centralizada y protección.
 
 export default function ClienteRoutes({ modoPrueba = false }) {
   return (
     <div>
-      {modoPrueba && <div className="alert alert-warning text-center">Estás en modo prueba</div>}
       <Routes>
+        {/* Rutas que son accesibles públicamente sin necesidad de autenticación */}
         <Route path="/" element={<Home />} />
         <Route path="/marcas" element={<Marcas />} />
         <Route path="/productos" element={<Productos />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/CarritoPage" element={<CarritoPage />} />
-        <Route path="/CheckoutPage" element={<CheckoutPage />} />
-        <Route path="/registro" element={<RegistroCliente />} />
-        <Route path="/recuperar" element={<RecuperacionCliente />} />
+        {/* Las rutas de carrito y checkout ya no están aquí, se protegen directamente en App.js */}
       </Routes>
     </div>
   );
