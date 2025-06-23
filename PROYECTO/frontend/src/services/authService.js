@@ -118,12 +118,38 @@ const getProfile = async () => {
   }
 };
 
+//restablecer contraseña
+
+
 const authService = {
   registerCliente,
   registerAdmin,
   login,
   logout,
   getProfile,
+    requestPasswordReset: async (email) => {
+    try {
+      // Realiza la llamada POST a tu endpoint de Laravel
+      const response = await axios.post(`${API_BASE_URL}/forgot-password`, { email });
+      // Laravel debería devolver un mensaje de éxito
+      return response.data;
+    } catch (error) {
+      // Si Laravel devuelve un error, lo capturamos
+      const message = error.response?.data?.message || error.message || "Error desconocido al solicitar la recuperación.";
+      throw new Error(message);
+    }
+  },
+
+  // También necesitarás una función para el restablecimiento real:
+   resetPassword: async (token, email, password, password_confirmation) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/reset-password`, { token, email, password, password_confirmation });
+       return response.data;
+    } catch (error) {
+      const message = error.response?.data?.message || error.message || "Error al restablecer la contraseña.";
+     throw new Error(message);
+    }
+   }
 };
 
 export default authService;

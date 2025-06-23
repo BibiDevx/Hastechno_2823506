@@ -15,6 +15,8 @@ use App\Http\Controllers\carritoController;
 use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Controllers\ForgotPasswordController; 
+use App\Http\Controllers\ResetPasswordController;
 ///GLOBAL
 
 Route::prefix('verProductos')->group(function () {
@@ -48,6 +50,13 @@ Route::group([
 Route::middleware(['auth:api', 'role:Cliente'])->prefix('clientes')->group(function () {
     Route::patch('/actualizar/cuenta', [clienteController::class, 'updatePartial']);
     Route::delete('/eliminar/cuenta', [clienteController::class, 'destroy']);
+});
+Route::middleware(['auth:api', 'role:Cliente'])->prefix('p')->group(function () {
+// Pedidos
+    Route::post('/pedidos', [PedidoController::class, 'store']); // O 'store' si usas Resource
+    Route::get('/pedidos', [PedidoController::class, 'index']); // Para obtener todos los pedidos (del usuario autenticado)
+    Route::get('/pedidos/{id}', [PedidoController::class, 'show']); 
+    Route::get('/mis-productos-comprados', [PedidoController::class, 'getUserPurchaseItems']);
 });
 
 /////////////////////////////////////////////////////////////////////////
@@ -136,10 +145,6 @@ Route::middleware(['auth:api','role:Cliente'])->group(function () {
     // Pero la implementación actual del controlador es más flexible.
 });
 
-// Pedidos
-Route::get('/pedidos/{idCliente}', [PedidoController::class, 'index']);
-Route::post('/pedidos', [PedidoController::class, 'store']);
-Route::get('/pedido/{id}', [PedidoController::class, 'show']);
 
 // Factura
 Route::get('/factura/pedido/{idPedido}', [FacturaController::class, 'show']);
@@ -170,4 +175,10 @@ Route::middleware(['auth:api', 'role:SuperAdmin'])->group(function () {
 
     // ... aquí irían también tus otras rutas protegidas por SuperAdmin
     // como las de roles (control/roles/...) y las de admin (users/...)
+
+    // Ruta para solicitar el enlace de restablecimiento (la que usa tu frontend ahora)
+Route::post('auth/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
+
+// Ruta para restablecer la contraseña (para cuando el usuario haga clic en el enlace del email)
+Route::post('auth/reset-password', [ResetPasswordController::class, 'reset'])->name('password.update');
 });

@@ -140,6 +140,14 @@ function Navbar() {
                     <i className="bi bi-pencil me-2"></i> Editar Perfil
                   </Link>
                 </li>
+                 <li>
+                  <Link
+                    to="/historial"
+                    className="dropdown-item text-secondary d-flex align-items-center"
+                  >
+                    <i className="bi bi-box-seam me-2"></i> Mis Pedidos
+                  </Link>
+                </li> 
                 <li>
                   <button
                     className="dropdown-item text-secondary d-flex align-items-center"

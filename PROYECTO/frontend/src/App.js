@@ -16,6 +16,8 @@ import SidebarAdmin from "./components/admin/SidebarAdmin";
 import ProductInfo from "./components/client/ProductInfo";
 import ProductosPorMarca from "./components/client/ProductosPorMarca";
 import ProductoCategorias from './components/admin/productosCategorias';
+import Historial from './components/client/Historial';
+import OrderDetails from "./components/client/OrderDetails";
 
 function App() {
   return (
@@ -86,6 +88,8 @@ function MainLayout() {
           <Route path="/editar-perfil" element={<EditarPerfil />} />
           <Route path="/info/:idProducto" element={<ProductInfo />} />
           <Route path="/productos/marca/:idMarca" element={<ProductosPorMarca />} />
+          <Route path="/Historial/" element={<Historial />} />
+          <Route path="/Historial/:id" element={<OrderDetails />} />
 
           {/* Considera si esta ruta debe ser accesible para todos o solo para admins.
               Si es solo para admins, lo ideal es moverla DENTRO de AdminRoutes. */}

@@ -5,7 +5,7 @@ import CarritoPage from "../pages/client/CarritoPage";
 import Productos from "../pages/client/Productos";
 import RegistroCliente from "../pages/client/registro";
 import RecuperacionCliente from "../pages/client/recuperar";
-import Pago from "../pages/client/Pago";
+import CheckoutPage from "../pages/client/CheckoutPage";
 import Login from "../pages/client/Login";
 
 export default function ClienteRoutes({ modoPrueba = false }) {
@@ -18,7 +18,7 @@ export default function ClienteRoutes({ modoPrueba = false }) {
         <Route path="/productos" element={<Productos />} />
         <Route path="/login" element={<Login />} />
         <Route path="/CarritoPage" element={<CarritoPage />} />
-        <Route path="/pago" element={<Pago />} />
+        <Route path="/CheckoutPage" element={<CheckoutPage />} />
         <Route path="/registro" element={<RegistroCliente />} />
         <Route path="/recuperar" element={<RecuperacionCliente />} />
       </Routes>

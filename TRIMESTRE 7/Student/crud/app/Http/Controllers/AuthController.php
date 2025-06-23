@@ -97,15 +97,31 @@ class AuthController extends BaseController
     $success = $this->respondWithToken($token);
     return $this->sendResponse($success, 'User login successfully');
 }
- /**
-     * @OA\Get(
-     *     path="/api/profile",
-     *     summary="Obtener perfil del usuario",
-     *     tags={"Auth"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(response=200, description="Perfil del usuario autenticado")
-     * )
-     */
+/**
+ * @OA\Get(
+ *     path="/api/profile",
+ *     summary="Obtener perfil del usuario autenticado",
+ *     tags={"Auth"},
+ *     security={{"bearerAuth":{}}},
+ *     @OA\Response(
+ *         response=200,
+ *         description="Perfil del usuario autenticado",
+ *         @OA\JsonContent(
+ *             type="object",
+ *             @OA\Property(property="status", type="boolean", example=true),
+ *             @OA\Property(property="message", type="string", example="User data retrieved successfully"),
+ *             @OA\Property(
+ *                 property="data",
+ *                 type="object",
+ *                 @OA\Property(property="id", type="integer", example=1),
+ *                 @OA\Property(property="email", type="string", example="juan@example.com"),
+ *                 @OA\Property(property="created_at", type="string", example="2024-06-01T12:00:00.000000Z"),
+ *                 @OA\Property(property="updated_at", type="string", example="2024-06-10T09:00:00.000000Z")
+ *             )
+ *         )
+ *     )
+ * )
+ */
     public function profile()
     {
         // Obtener el usuario autenticado con JWT

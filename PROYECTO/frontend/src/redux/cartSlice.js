@@ -1,6 +1,7 @@
 // src/redux/cartSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import carritoService from '../services/carritoService'; // Ruta a tu nuevo servicio
+import pedidoService from '../services/pedidoService'; // <--- This line is crucial!
 // eslint-disable-next-line no-unused-vars
 import { getOrCreateGuestId, removeGuestId } from '../utils/guestCartUtils'; // Utilidades para guest_id
 
@@ -8,8 +9,31 @@ const initialState = {
   items: [],
   status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
   error: null,
+   // ✅ NUEVOS ESTADOS para el proceso de pedido
+  orderStatus: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed' (para placeOrder)
+  orderError: null,    // Errores al realizar el pedido
 };
 
+// ✅ NUEVO THUNK: placeOrder
+export const placeOrder = createAsyncThunk(
+  'carrito/placeOrder',
+  async (orderData, { rejectWithValue, dispatch }) => {
+    try {
+      // orderData debería contener { productos: [{ idProducto, cantidad }], ... }
+      const response = await pedidoService.placeOrder(orderData); // Llama al nuevo servicio
+      
+      // Una vez que el pedido es exitoso en el backend (y asumiendo que el backend vació el carrito)
+      // necesitamos limpiar el carrito del estado de Redux localmente.
+      dispatch(clearLocalCart()); // Llama al reducer síncrono para limpiar el estado local
+      
+      return response; // Devuelve la respuesta del backend (ej. el objeto del pedido/factura)
+    } catch (error) {
+      console.error("Error al realizar el pedido (slice):", error.response?.data || error.message);
+      const message = error.response?.data?.message || error.message || 'Error desconocido al realizar el pedido.';
+      return rejectWithValue(message);
+    }
+  }
+);
 // --- Acciones Asíncronas (Thunks) ---
 
 export const fetchCartItems = createAsyncThunk(
@@ -189,6 +213,20 @@ const cartSlice = createSlice({ // <<-- CAMBIADO AQUÍ: Declarar como 'const'
         state.status = 'failed';
         state.error = action.payload;
         state.items = [];
+      })
+      .addCase(placeOrder.pending, (state) => {
+        state.orderStatus = 'loading';
+        state.orderError = null; // Limpiar errores previos al iniciar la operación
+      })
+      .addCase(placeOrder.fulfilled, (state, action) => {
+        state.orderStatus = 'succeeded';
+        state.orderError = null;
+        // La limpieza del carrito (state.items = []) se hace con `dispatch(clearLocalCart())` en el thunk
+        // Esto permite que el thunk decida cuándo limpiar el carrito una vez que el backend confirma el pedido.
+      })
+      .addCase(placeOrder.rejected, (state, action) => {
+        state.orderStatus = 'failed';
+        state.orderError = action.payload;
       });
   },
 });

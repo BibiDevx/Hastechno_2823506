@@ -59,7 +59,7 @@ const CarritoPage = () => { // Renombrado a CarritoPage para consistencia
 
   const handleRealizarPago = () => {
     if (isAuthenticated) {
-      navigate('/pago'); // Redirige a la página de pago
+      navigate('/CheckoutPage'); // Redirige a la página de pago
     } else {
       navigate('/login'); // Redirige a login si no está autenticado
     }

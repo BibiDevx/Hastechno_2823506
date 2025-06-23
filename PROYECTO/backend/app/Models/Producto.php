@@ -17,6 +17,7 @@ class Producto extends Model
         'valorProducto',
         'idProveedor',
         'disponibilidad',
+        'cantidadStock',
         'idMarca'
     ];
 

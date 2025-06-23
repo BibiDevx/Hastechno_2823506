@@ -9,7 +9,7 @@ class PedidoProducto extends Model
 {
     use HasFactory;
     protected $table = 'pedidoproducto';
-
+    public $timestamps = true;
     protected $fillable = [
         'idPedido',
         'idProducto',

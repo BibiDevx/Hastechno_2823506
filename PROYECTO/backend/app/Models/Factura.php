@@ -13,6 +13,7 @@ class Factura extends Model
 
     protected $fillable = [
         'idPedido',
+        'metodoPago',
         'fechaFactura'
     ];
 

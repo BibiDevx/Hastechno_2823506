@@ -8,61 +8,92 @@ import productService from '../../services/productService'; // Importa el servic
 
 const ProductCard = ({ product }) => {
   const dispatch = useDispatch();
-  // Ruta de imagen de ejemplo. Asegúrate de que esta ruta sea válida en tu proyecto.
-  // En un entorno de producción, las imágenes se servirían desde un CDN o el backend.
   const imagePath = `/assets/img/productos/${product.idProducto}/principal.png`;
 
+  const isAvailable = product.cantidadStock > 0;
+
   const handleAddToCart = () => {
-    dispatch(
-      addToCart({
-        idProducto: product.idProducto,
-        nombreProducto: product.nombreProducto,
-        valorProducto: product.valorProducto,
-        cantidad: 1,
-      })
-    );
-    console.log(
-      `Producto "${product.nombreProducto}" con ID ${product.idProducto} agregado al carrito desde la Home.`
-    );
-    alert(`"${product.nombreProducto}" agregado al carrito.`);
+    if (isAvailable) {
+      dispatch(
+        addToCart({
+          idProducto: product.idProducto,
+          nombreProducto: product.nombreProducto,
+          valorProducto: product.valorProducto,
+          cantidad: 1,
+        })
+      );
+      console.log(
+        `Producto "${product.nombreProducto}" (ID: ${product.idProducto}) agregado al carrito desde la Home.`
+      );
+      alert(`"${product.nombreProducto}" agregado al carrito.`);
+    } else {
+      alert("Este producto está agotado.");
+    }
   };
 
   return (
     <div className="col">
-      <div className="card shadow-sm text-center h-100 border-0 rounded-lg"> {/* Añadido rounded-lg */}
+      <div 
+        className="card shadow-sm text-center h-100 border-0 rounded-lg product-card-hover" // Agregado product-card-hover
+        style={{ transition: 'transform 0.2s ease-in-out' }} // Transición para el hover
+      >
         <div
-          className="bg-light d-flex align-items-center justify-content-center p-3 rounded-top-lg" // rounded-top-lg
-          style={{ height: "220px" }}
+          className="bg-light d-flex align-items-center justify-content-center p-3 rounded-top-lg"
+          style={{ height: "220px", overflow: 'hidden' }} // overflow:hidden para imágenes grandes
         >
           <img
             src={imagePath}
             alt={product.nombreProducto}
             className="img-fluid"
             style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }}
-            // Manejo de error para la imagen
             onError={(e) => {
-              e.target.onerror = null; // Previene bucles infinitos
-              e.target.src = `https://placehold.co/200x200/cccccc/000000?text=No+Imagen`; // Placeholder
+              e.target.onerror = null;
+              e.target.src = `https://placehold.co/200x200/e0e0e0/555555?text=No+Imagen`; // Placeholder más suave
               console.warn(`Error al cargar imagen para producto ${product.idProducto}: ${product.nombreProducto}`);
             }}
           />
         </div>
         <div className="card-body d-flex flex-column justify-content-between bg-white p-3">
-          <h5 className="card-title fw-bold text-truncate">{product.nombreProducto}</h5>
-          {/* Formato de moneda con toLocaleString */}
-          <p className="card-text fw-bold text-primary">${product.valorProducto.toLocaleString('es-CO')}</p>
-          <div className="mt-3 d-flex justify-content-center gap-2">
+          <h5 className="card-title fw-bold text-truncate mb-2" style={{ fontSize: '1.15rem' }}>{product.nombreProducto}</h5> {/* Tamaño de fuente ajustado */}
+          <p className="card-text fw-bolder text-primary mb-3" style={{ fontSize: '1.35rem' }}> {/* Fuente más grande y negrita */}
+            ${product.valorProducto.toLocaleString('es-CO')}
+          </p>
+          
+          {/* --- Mejora visual para la cantidad de stock --- */}
+          {product.cantidadStock !== undefined && product.cantidadStock !== null ? (
+            <p className="card-text mb-3"> {/* Margin-bottom añadido */}
+              {product.cantidadStock > 0 ? (
+                <span className="badge bg-success-subtle text-success fs-6 py-2 px-3"> {/* Badge de Bootstrap */}
+                  <i className="bi bi-box-seam me-2"></i> {product.cantidadStock} en stock
+                </span>
+              ) : (
+                <span className="badge bg-danger-subtle text-danger fs-6 py-2 px-3"> {/* Badge para agotado */}
+                  <i className="bi bi-exclamation-triangle-fill me-2"></i> Agotado
+                </span>
+              )}
+            </p>
+          ) : (
+            <p className="card-text mb-3">
+              <span className="badge bg-warning-subtle text-warning fs-6 py-2 px-3">
+                <i className="bi bi-question-circle-fill me-2"></i> Stock: No disponible
+              </span>
+            </p>
+          )}
+          {/* -------------------------------------------------------- */}
+
+          <div className="mt-auto d-flex justify-content-center gap-2"> {/* mt-auto para empujar hacia abajo */}
             <Link
               to={`/info/${product.idProducto}`}
-              className="btn btn-outline-info btn-sm rounded-pill fw-semibold" // rounded-pill, fw-semibold
+              className="btn btn-outline-info btn-sm rounded-pill fw-semibold flex-grow-1" // flex-grow-1 para que ocupe espacio
             >
-              <i className="bi bi-info-circle-fill me-1"></i> Info
+              <i className="bi bi-info-circle-fill me-1"></i> Detalles
             </Link>
             <button
-              className="btn btn-primary btn-sm rounded-pill fw-semibold" // rounded-pill, fw-semibold
+              className={`btn btn-sm rounded-pill fw-semibold flex-grow-1 ${isAvailable ? 'btn-primary' : 'btn-secondary'}`} // Cambia color si agotado
               onClick={handleAddToCart}
+              disabled={!isAvailable} 
             >
-              <i className="bi bi-cart-plus-fill me-1"></i> Agregar
+              <i className="bi bi-cart-plus-fill me-1"></i> {isAvailable ? 'Agregar' : 'Agotado'}
             </button>
           </div>
         </div>
@@ -79,23 +110,21 @@ const HomePage = () => {
   useEffect(() => {
     const fetchRecentProducts = async () => {
       setLoading(true);
-      setError(''); // Limpiar errores antes de cada intento
+      setError('');
       try {
-        // ✅ CORRECCIÓN CLAVE: productService.getHomeProducts() ahora devuelve directamente el array
         const data = await productService.getHomeProducts();
         
-        if (Array.isArray(data)) { // Verifica si la respuesta es un array
+        if (Array.isArray(data)) {
           setProductosRecientes(data);
         } else {
           console.error("Formato de datos inesperado de la API de productos recientes:", data);
           setError('Formato de datos inesperado al cargar productos.');
-          setProductosRecientes([]); // Asegurar que sea un array vacío
+          setProductosRecientes([]);
         }
       } catch (err) {
         console.error("Error al cargar los productos recientes:", err);
-        // El mensaje de error ya debería venir formateado desde el servicio
         setError('Error al cargar los productos recientes: ' + (err.message || 'Error desconocido.'));
-        setProductosRecientes([]); // Limpiar en caso de error
+        setProductosRecientes([]);
       } finally {
         setLoading(false);
       }
@@ -128,7 +157,7 @@ const HomePage = () => {
             className="d-block w-100 h-100 object-fit-cover"
             src="/assets/img/banner/banner1.png"
             alt="Oferta 1"
-            onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/800x400/cccccc/000000?text=Banner+1`; }}
+            onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/800x400/e0e0e0/555555?text=Banner+1`; }}
           />
         </Carousel.Item>
         <Carousel.Item style={{ height: "400px" }}>
@@ -136,7 +165,7 @@ const HomePage = () => {
             className="d-block w-100 h-100 object-fit-cover"
             src="/assets/img/banner/banner2.png"
             alt="Oferta 2"
-            onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/800x400/cccccc/000000?text=Banner+2`; }}
+            onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/800x400/e0e0e0/555555?text=Banner+2`; }}
           />
           <Carousel.Caption className="bg-dark bg-opacity-75 rounded p-2">
             <h3 className="fw-bold text-warning">Procesadores de Última Generación</h3>
@@ -168,10 +197,10 @@ const HomePage = () => {
             <div className="card h-100 shadow-sm border-0 rounded-lg">
               <img
                 src="/assets/img/novedad/noticia1.png"
-                className="card-img-top rounded-top-lg" // rounded-top-lg
+                className="card-img-top rounded-top-lg"
                 alt="Noticia 1"
                 style={{ height: "200px", objectFit: "cover" }}
-                onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/400x200/cccccc/000000?text=Noticia+1`; }}
+                onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/400x200/e0e0e0/555555?text=Noticia+1`; }}
               />
               <div className="card-body p-3">
                 <h5 className="card-title fw-semibold text-secondary">NVIDIA lanza nueva RTX 5090</h5>
@@ -185,10 +214,10 @@ const HomePage = () => {
             <div className="card h-100 shadow-sm border-0 rounded-lg">
               <img
                 src="/assets/img/novedad/noticia2.png"
-                className="card-img-top rounded-top-lg" // rounded-top-lg
+                className="card-img-top rounded-top-lg"
                 alt="Noticia 2"
                 style={{ height: "200px", objectFit: "cover" }}
-                onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/400x200/cccccc/000000?text=Noticia+2`; }}
+                onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/400x200/e0e0e0/555555?text=Noticia+2`; }}
               />
               <div className="card-body p-3">
                 <h5 className="card-title fw-semibold text-secondary">AMD presenta Ryzen 9000</h5>
@@ -202,10 +231,10 @@ const HomePage = () => {
             <div className="card h-100 shadow-sm border-0 rounded-lg">
               <img
                 src="/assets/img/novedad/noticia3.png"
-                className="card-img-top rounded-top-lg" // rounded-top-lg
+                className="card-img-top rounded-top-lg"
                 alt="Noticia 3"
                 style={{ height: "200px", objectFit: "cover" }}
-                onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/400x200/cccccc/000000?text=Noticia+3`; }}
+                onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/400x200/e0e0e0/555555?text=Noticia+3`; }}
               />
               <div className="card-body p-3">
                 <h5 className="card-title fw-semibold text-secondary">Intel apuesta por chips híbridos</h5>
@@ -219,7 +248,7 @@ const HomePage = () => {
       </div>
 
       {/* Footer */}
-      <footer className="bg-dark text-light text-center p-4 mt-5 shadow-lg"> {/* p-4, shadow-lg */}
+      <footer className="bg-dark text-light text-center p-4 mt-5 shadow-lg">
         <p className="mb-0 small">© 2025 PC Componentes | Todos los derechos reservados</p>
       </footer>
     </div>
