@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 27-06-2025 a las 02:19:54
+-- Tiempo de generación: 27-06-2025 a las 02:24:23
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -127,13 +127,6 @@ CREATE TABLE `carrito` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Volcado de datos para la tabla `carrito`
---
-
-INSERT INTO `carrito` (`idCarrito`, `idCliente`, `guest_id`, `idProducto`, `cantidad`, `created_at`, `updated_at`) VALUES
-(2, NULL, 'c88a0247-0fa3-4776-9644-f733e225e16e', 2, 1, '2025-06-27 05:15:46', '2025-06-27 05:15:46');
-
 -- --------------------------------------------------------
 
 --
@@ -255,10 +248,18 @@ INSERT INTO `cliente` (`idCliente`, `idUsuario`, `cedulaCliente`, `nombreCliente
 CREATE TABLE `factura` (
   `idfactura` int(11) NOT NULL,
   `idPedido` int(11) NOT NULL,
+  `metodoPago` varchar(55) NOT NULL,
   `fechaFactura` date NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `factura`
+--
+
+INSERT INTO `factura` (`idfactura`, `idPedido`, `metodoPago`, `fechaFactura`, `created_at`, `updated_at`) VALUES
+(1, 2, 'Tarjeta de Crédito', '2025-06-27', '2025-06-27 05:23:51', '2025-06-27 05:23:51');
 
 -- --------------------------------------------------------
 
@@ -395,6 +396,13 @@ CREATE TABLE `pedido` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Volcado de datos para la tabla `pedido`
+--
+
+INSERT INTO `pedido` (`idPedido`, `idCliente`, `fechaPedido`, `created_at`, `updated_at`) VALUES
+(2, 1, '2025-06-27', '2025-06-27 05:23:51', '2025-06-27 05:23:51');
+
 -- --------------------------------------------------------
 
 --
@@ -409,6 +417,15 @@ CREATE TABLE `pedidoproducto` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `pedidoproducto`
+--
+
+INSERT INTO `pedidoproducto` (`idProducto`, `idPedido`, `cantidadProducto`, `valorTotal`, `created_at`, `updated_at`) VALUES
+(2, 2, 1, 600000, '2025-06-27 05:23:51', '2025-06-27 05:23:51'),
+(19, 2, 1, 1415000, '2025-06-27 05:23:51', '2025-06-27 05:23:51'),
+(21, 2, 1, 155000, '2025-06-27 05:23:51', '2025-06-27 05:23:51');
 
 -- --------------------------------------------------------
 
@@ -454,7 +471,7 @@ CREATE TABLE `producto` (
 
 INSERT INTO `producto` (`idProducto`, `nombreProducto`, `definicion`, `idMarca`, `valorProducto`, `disponibilidad`, `cantidadStock`, `idProveedor`, `created_at`, `updated_at`) VALUES
 (1, 'BOARD ASUS B550M-A AC WIFI', 'se hizo un cambio', 1, 542000, 1, 100, 1, '2025-04-03 18:25:16', '2025-06-26 23:51:57'),
-(2, 'SanDisk Extreme Portable SSD 1TB', 'Tipo: SSD externo portátil\r\n\r\nInterfaz: USB-C 3.2 Gen 2 (10 Gbps)\r\n\r\nVelocidad de lectura: Hasta 1000 MB/s\r\n\r\nResistencia: Certificación IP65 (resistente al agua y polvo)\r\n\r\nCompatibilidad: PS5, PC, Mac', 17, 600000, 1, 100, 1, '2025-04-17 02:34:18', '2025-06-26 23:52:19'),
+(2, 'SanDisk Extreme Portable SSD 1TB', 'Tipo: SSD externo portátil\r\n\r\nInterfaz: USB-C 3.2 Gen 2 (10 Gbps)\r\n\r\nVelocidad de lectura: Hasta 1000 MB/s\r\n\r\nResistencia: Certificación IP65 (resistente al agua y polvo)\r\n\r\nCompatibilidad: PS5, PC, Mac', 17, 600000, 1, 99, 1, '2025-04-17 02:34:18', '2025-06-27 05:23:51'),
 (3, 'Thermaltake Smart BX1 650W 80+ Bronze', 'Potencia: 650W\r\n\r\nCertificación: 80 Plus Bronze\r\n\r\nConectores: 24 pines x1, 4+4 pines x1, SATA x6, PCI-E x2, periférico x4, FDD x1\r\n\r\nVentilador: 120mm silencioso', 12, 345000, 1, 100, 1, '2025-04-17 02:41:08', '2025-06-26 23:52:19'),
 (4, 'XPG PYLON 650W 80+ Bronze', 'Potencia: 650W\n\nCertificación: 80 Plus Bronze\n\nConectores: SATA x12, PCI-E x4, HDD x12, Floppy x1', 15, 350000, 1, 100, 1, '2025-04-17 02:41:08', '2025-06-26 23:52:19'),
 (5, 'Intel Core i5-12400F (12ª Gen)', 'Núcleos/Hilos: 6 núcleos, 12 hilos\n\nFrecuencia base: 2.5 GHz\n\nFrecuencia turbo: Hasta 4.4 GHz\n\nCaché: 18 MB Intel Smart Cache\n\nSocket: LGA 1700\n\nGráficos integrados: No\n\nIncluye disipador: Sí', 13, 590000, 1, 100, 1, '2025-04-17 02:41:08', '2025-06-26 23:52:19'),
@@ -471,9 +488,9 @@ INSERT INTO `producto` (`idProducto`, `nombreProducto`, `definicion`, `idMarca`,
 (16, 'Caja Xpg Invader X Negra Vidrio Templado + 5 Argb + Riser 4.0', 'Dimensiones (AL x AN x FO): 448 x 245 x 475 mm (17,64 x 9,65 x 18,70 pulg)\r\n\r\nColor: Negro\r\n\r\nMaterial: SPCC/ Vidrio templado de 3mm\r\n\r\nFactor de forma: ATX, Micro-ATX, Mini-ITX\r\n\r\nBandeja para unidades de disco duro y de estado sólido de 3.5″: 3 (HDD de 3,5″ o SSD de 2,5″)\r\n\r\nPuerto de E/S: USB 3.2 Tipo-C x 1, USB 3.2 Tipo-A x 2, Puerta de Áudio HD x 1, Interruptor x 1, Botón de reinicio x 1\r\n\r\nVentilador incluido: 5 x 120 mm (opcional según modelo), (4 ventiladores invertidos + 1 ventilador normal)\r\n\r\nSoporte del ventilador:\r\n\r\nTRASERO :120mm x 1 / 140mm x 1\r\nSUPERIOR:120 mm x 3 / 140 mm x 2\r\nLateral:120mm x 3\r\nInferior: 120mm x 1 / 140mm x 1\r\nProtector de PSU :120mm x 2\r\nSoporte del radiador:\r\n\r\nTRASERO:120mm\r\nSUPERIOR: Hasta 360mm\r\nLateral: Hasta 360mm (Sólo montaje vertical de la GPU)\r\nDistancia de seguridad:\r\n\r\nTarjeta gráfica:\r\n\r\n400mm (Montaje GPU vertical / horizontal sin radiador lateral)\r\n270 mm (montaje horizontal de GPU con radiador lateral) instalación vertical de la tarjeta gráfica: 30.5mm Altura del enfriador de la CPU: hasta 175 mm\r\nLongitud de la fuente de alimentación (PSU): hasta 240 mm', 15, 709000, 1, 100, 1, '2025-04-22 01:26:09', '2025-06-26 23:52:19'),
 (17, 'Caja Corsair 2500x Vidrio Templado No Fan Blanca', 'El chasis para PC de dos cámaras semitorre CORSAIR 2500X ofrece un flujo de aire y refrigeración excepcionales con paneles completamente de malla y un diseño de doble cámara lograr un diseño organizado e impresionante.\r\n\r\nDos cámaras para un aspecto estilizado\r\nMuchas opciones de personalización\r\nCompatibilidad con placas base mATX y mITX de conector inverso\r\nAmplia flexibilidad de refrigeración\r\nLibertad de elección tanto en el interior como en el exterior. Elija su diseño de refrigeración: opte por más cristal para mostrar sus componentes o un diseño de flujo de aire más sutil, en algo más que blanco o negro.\r\n\r\nLa 2500 Series puede albergar un PC potente con un tamaño impresionantemente pequeño. Asegúrese de que su diseño esté despejado, organizado y bien refrigerado en la cámara principal mientras oculta la guía para cables, las unidades de almacenamiento y la fuente de alimentación en la segunda cámara.\r\n\r\nAproveche la compatibilidad de la placa base con conector inverso (ASUS BTF, MSI PROJECT ZERO) e iCUE LINK y gane la guerra a los cables de una vez por todas.\r\n\r\nEl 2500X no solo tiene un diseño alucinante. Los soportes para ventiladores y radiadores alrededor garantizan un flujo de aire suficiente para cualquier diseño emblemático.\r\n\r\nPersonalice su configuración de refrigeración gracias al espacio para hasta 9 ventiladores de 120 mm o 6 de 140 mm. Incluye opciones versátiles de montaje de radiadores de hasta 240 mm en el lateral y hasta 360 mm en la parte superior e inferior.\r\n\r\n \r\n\r\nAltura de la caja: 376\r\n\r\nDuración del caso: 469\r\n\r\nAncho de caja: 304\r\n\r\nMaterial: Acero, vidrio templado, plástico.\r\n\r\nSoporte de placa base: Mini-ITX, Micro-ATX\r\n\r\nColor: Blanco\r\n\r\nPeso: 13.39\r\n\r\nCompatibilidad del radiador: 120 mm, 140 mm, 240 mm, 280 mm, 360 mm\r\n\r\nLongitud máxima de GPU: 400 mm\r\n\r\nAltura máxima del enfriador de CPU: 180 mm\r\n\r\nLongitud máxima de la fuente de alimentación: 225 mm\r\n\r\nRefrigeradores líquidos compatibles: H60, H100i, H115i, H150i (todas las series)\r\n\r\nTamaño de la caja: Torre intermedia\r\n\r\nFuente de alimentación de caja: ATX\r\n\r\nRanuras de expansión de la caja: 4 horizontales (4 verticales con accesorio)\r\n\r\nCaja frontal IO: (1x) USB 3.2 Gen 2 Tipo-C, (2x) USB 3.2 Gen 1 Tipo-A, (1x) Entrada/salida de audio\r\n\r\nVentana de caja: Vidrio templado\r\n\r\nBahías de unidad internas de 3,5″: 2\r\n\r\nBahías de unidad internas de 2,5″: 2\r\n\r\nSoporte del radiador – Superior: 360 mm, 280 mm, 240 mm\r\n\r\nSoporte de radiador delantero: Ninguno (Panel de vidrio)\r\n\r\nSoporte del radiador – inferior: 360 mm, 280 mm, 240 mm\r\n\r\nSoporte de radiador – lateral: 240 mm\r\n\r\nSoporte del radiador trasero: 120 mm\r\n\r\nSoporte de los fans – Top: 3 x 120 mm, 3 x 140 mm\r\n\r\nSoporte de ventilador – Delantero: Ninguno (Panel de vidrio)\r\n\r\nSoporte para ventiladores – Parte inferior: 3 x 120 mm, 3 x 140 mm\r\n\r\nSoporte de ventilador – Lateral: 2×120 mm\r\n\r\nSoporte de ventilador – Trasero: 1×120 mm\r\n\r\nConexiones de E/S frontales de la placa base: 1x audio HD; 1x USB 3.2 Gen1; 1x USB-3.2 Gen2 Tipo-E; 1x F_PANEL\r\n\r\nSoporte para placa base con conector inverso: Sí\r\n\r\nFiltración de polvo: Sí\r\n\r\nEspacio para enrutamiento de cables: 106 mm\r\n\r\nRapidRoute incluido: Compatible (se vende por separado)\r\n\r\nPanel lateral izquierdo: Vidrio templado\r\n\r\nPanel lateral derecho: Malla', 4, 695000, 1, 100, 1, '2025-04-22 01:30:04', '2025-06-26 23:52:19'),
 (18, 'Monitor Led Lg 34″ 2k Curvo Wqhd 160hz Hdr Pivot 34gp63a-B', 'Una velocidad rápida de 160 Hz permite a los jugadores ver el siguiente cuadro rápidamente y hace que la imagen aparezca sin problemas. Los jugadores pueden responder rápidamente a los oponentes y apuntar al objetivo fácilmente.\r\n\r\n1 ms MBR ayuda a suavizar el juego, reduciendo el desenfoque y el efecto fantasma. Los objetos dinámicos y de ritmo rápido en medio de toda la acción pueden dar a los jugadores una ventaja competitiva.\r\n\r\nCon la tecnología FreeSync™ Premium, los jugadores pueden experimentar un movimiento fluido y continuo en juegos de alta resolución y ritmo rápido. Prácticamente reduce el desgarro y el tartamudeo de la pantalla.\r\n\r\nEste monitor admite un amplio espectro de colores, el 99% de la gama de colores sRGB, expresando colores de alta fidelidad para reproducir con HDR10, lo que permite una inmersión visual realista. Independientemente del campo de batalla, puede ayudar a los jugadores a ver los colores dramáticos que pretendían los desarrolladores del juego.\r\n\r\nEsta pantalla optimizada cuenta con un bisel delgado en tres lados y sin distracciones de la imagen deslumbrantemente precisa y realista, mientras que los parlantes estéreo de 7 W con MaxxAudio® completan su experiencia de juego inmersiva.', 6, 2149000, 1, 100, 1, '2025-04-22 01:30:04', '2025-06-26 23:52:19'),
-(19, 'Monitor Led Asus 32″ Tuf Gaming Vg32vq1b', 'La tecnología ASUS Extreme Low Motion Blur (ELMB ™) permite un tiempo de respuesta de 1 ms (MPRT) junto con Adaptive-sync, eliminando las imágenes fantasmas y el desgarro para obtener imágenes de juego nítidas con altas velocidades de cuadro.\r\n\r\nTecnología FreeSync Premium compatible a través de puertos DP y HDMI que brindan frecuencias de actualización variables para baja latencia, sin tartamudeos y sin desgarros mientras se juega.\r\n\r\nShadow Boost mejora los detalles de la imagen en áreas oscuras, iluminando escenas sin sobreexponer áreas brillantes.', 1, 1415000, 1, 100, 1, '2025-04-22 01:34:24', '2025-06-26 23:52:19'),
+(19, 'Monitor Led Asus 32″ Tuf Gaming Vg32vq1b', 'La tecnología ASUS Extreme Low Motion Blur (ELMB ™) permite un tiempo de respuesta de 1 ms (MPRT) junto con Adaptive-sync, eliminando las imágenes fantasmas y el desgarro para obtener imágenes de juego nítidas con altas velocidades de cuadro.\r\n\r\nTecnología FreeSync Premium compatible a través de puertos DP y HDMI que brindan frecuencias de actualización variables para baja latencia, sin tartamudeos y sin desgarros mientras se juega.\r\n\r\nShadow Boost mejora los detalles de la imagen en áreas oscuras, iluminando escenas sin sobreexponer áreas brillantes.', 1, 1415000, 1, 99, 1, '2025-04-22 01:34:24', '2025-06-27 05:23:51'),
 (20, 'Monitor Led Gigabyte 27″ Ssips Qhd 1ms-240Hz M27qx-Sa Ajustable', 'Como reproductor invisible, el monitor suele subestimarse. La verdad es que los monitores funcionan como un efecto sinérgico y sacan el máximo rendimiento de los componentes de PC. Los monitores para juegos de GIGABYTE ofrecen las mejores especificaciones y calidad, y los usuarios pueden disfrutar de un rendimiento de primera clase sin necesidad de extravagancias.\r\n\r\nLa función KVM le permite controlar varios dispositivos a través de un conjunto de teclado, video y mouse. Con nuestro botón KVM exclusivo, ¡cambiar de dispositivos no puede ser más fácil! ¡Es tan rápido como un chasquido!\r\n\r\nAlta resolución y frecuencia de actualización rápida, que le brinda una calidad de visualización detallada y una experiencia de juego fluida.\r\n\r\nLa compatibilidad con DisplayPort High Bit Rate 3 (HBR3) proporciona el ancho de banda para ofrecer la frecuencia de actualización más rápida del monitor, profundidad de color completa y efecto HDR al mismo tiempo.\r\n\r\nLa apariencia aerodinámica representa la simplicidad de la filosofía de diseño de la serie de juegos GIGABYTE, un soporte resistente y un acabado mate diseñados para características funcionales y estéticas que agregan más características.', 3, 2029000, 1, 100, 1, '2025-04-22 01:34:24', '2025-06-26 23:52:19'),
-(21, 'Teclado Touch Inalámbrico Logitech K400 Smart Tv', 'Disfruta de un control simplificado de tu sistema multimedia PC a TV, sin los inconvenientes de tener el teclado y el ratón por separado.Las teclas cómodas y silenciosas, así como el amplio touchpad (9 cm o 3,5 in), te permiten navegar con total facilidad.\r\n\r\nVe vídeos, navega en Internet, habla con tus amigos y mucho más sin molestas demoras o interrupciones.\r\n\r\nCon K400 Plus, te sentirás cómodo al instante. La distribución está diseñada para una interacción multimedia relajada.\r\n\r\nUsa K400 Plus nada más sacarlo de la caja, o personaliza la configuración de las teclas y el touchpad con el software Logitech Options.\r\n\r\n \r\n\r\nDimensiones:\r\nGeneral:\r\n\r\nAltura: 139,9 mm\r\nAnchura: 354,3 mm\r\nProfundidad: 23,5 mm\r\nPeso: 380 g (con pilas)\r\n Touchpad\r\n\r\nAltura: 76 mm\r\nAnchura: 47 mm\r\nRequisitos del sistema:\r\nWindows® 7, Windows 8, Windows 10 o posterior\r\nAndroid™ 5.0 o posterior\r\nChrome OS™\r\nPuerto USB\r\nEspecificaciones:\r\nTipo de conexión: Protocolo Logitech Unifying (2,4 GHz)\r\nBotones/Teclas especiales: Silencio y ajuste de volumen\r\nConexión/Encendido: Conmutador de encendido/apagado\r\nDetalles de las pilas: 2 pilas AA\r\nDuración de las pilas (no recargables): Hasta 18 meses\r\nDuración de las teclas: Hasta 5 millones de pulsaciones\r\nRuido al escribir: Hasta 55 dBA para todas las teclas\r\nRadio de acción inalámbrico: 10 m', 8, 155000, 1, 100, 1, '2025-04-22 01:34:24', '2025-06-26 23:52:19');
+(21, 'Teclado Touch Inalámbrico Logitech K400 Smart Tv', 'Disfruta de un control simplificado de tu sistema multimedia PC a TV, sin los inconvenientes de tener el teclado y el ratón por separado.Las teclas cómodas y silenciosas, así como el amplio touchpad (9 cm o 3,5 in), te permiten navegar con total facilidad.\r\n\r\nVe vídeos, navega en Internet, habla con tus amigos y mucho más sin molestas demoras o interrupciones.\r\n\r\nCon K400 Plus, te sentirás cómodo al instante. La distribución está diseñada para una interacción multimedia relajada.\r\n\r\nUsa K400 Plus nada más sacarlo de la caja, o personaliza la configuración de las teclas y el touchpad con el software Logitech Options.\r\n\r\n \r\n\r\nDimensiones:\r\nGeneral:\r\n\r\nAltura: 139,9 mm\r\nAnchura: 354,3 mm\r\nProfundidad: 23,5 mm\r\nPeso: 380 g (con pilas)\r\n Touchpad\r\n\r\nAltura: 76 mm\r\nAnchura: 47 mm\r\nRequisitos del sistema:\r\nWindows® 7, Windows 8, Windows 10 o posterior\r\nAndroid™ 5.0 o posterior\r\nChrome OS™\r\nPuerto USB\r\nEspecificaciones:\r\nTipo de conexión: Protocolo Logitech Unifying (2,4 GHz)\r\nBotones/Teclas especiales: Silencio y ajuste de volumen\r\nConexión/Encendido: Conmutador de encendido/apagado\r\nDetalles de las pilas: 2 pilas AA\r\nDuración de las pilas (no recargables): Hasta 18 meses\r\nDuración de las teclas: Hasta 5 millones de pulsaciones\r\nRuido al escribir: Hasta 55 dBA para todas las teclas\r\nRadio de acción inalámbrico: 10 m', 8, 155000, 1, 99, 1, '2025-04-22 01:34:24', '2025-06-27 05:23:51');
 
 -- --------------------------------------------------------
 
@@ -771,7 +788,7 @@ ALTER TABLE `admin`
 -- AUTO_INCREMENT de la tabla `carrito`
 --
 ALTER TABLE `carrito`
-  MODIFY `idCarrito` int(10) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `idCarrito` int(10) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `categoria`
@@ -789,7 +806,7 @@ ALTER TABLE `cliente`
 -- AUTO_INCREMENT de la tabla `factura`
 --
 ALTER TABLE `factura`
-  MODIFY `idfactura` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `idfactura` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `failed_jobs`
@@ -819,7 +836,7 @@ ALTER TABLE `migrations`
 -- AUTO_INCREMENT de la tabla `pedido`
 --
 ALTER TABLE `pedido`
-  MODIFY `idPedido` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `idPedido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de la tabla `personal_access_tokens`
