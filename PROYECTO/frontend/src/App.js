@@ -36,7 +36,6 @@ import CheckoutPage from "./pages/client/CheckoutPage"; // Mover aquí para prot
 function App() {
   return (
     <Router>
-      {/* No se necesita AuthProvider aquí, ProtectedRoute consume directamente de Redux */}
       <MainLayout />
     </Router>
   );
@@ -68,6 +67,7 @@ function MainLayout() {
           <Route path="/registro" element={<RegistroCliente />} />
           <Route path="/recuperar" element={<RecuperacionCliente />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} /> {/* Página de acceso denegado */}
+          <Route path="/CarritoPage" element={<CarritoPage />} />
           
           {/* Rutas de información de producto que no requieren autenticación */}
           <Route path="/info/:idProducto" element={<ProductInfo />} />
@@ -97,7 +97,6 @@ function MainLayout() {
             <Route path="/editar-perfil" element={<EditarPerfil />} />
             <Route path="/Historial/" element={<Historial />} />
             <Route path="/Historial/:id" element={<OrderDetails />} />
-            <Route path="/CarritoPage" element={<CarritoPage />} />
             <Route path="/CheckoutPage" element={<CheckoutPage />} />
           </Route>
 

@@ -7,7 +7,7 @@ use App\Models\Proveedor;
 use App\Http\Controllers\BaseController; // Asegúrate de que BaseController esté disponible
 use Illuminate\Support\Facades\Validator; // Para usar Validator::make, que es más flexible
 
-class ProveedorController extends BaseController
+class proveedorController extends BaseController
 {
     public function index()
     {

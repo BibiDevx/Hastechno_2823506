@@ -15,7 +15,7 @@ export default function ClienteRoutes({ modoPrueba = false }) {
         <Route path="/" element={<Home />} />
         <Route path="/marcas" element={<Marcas />} />
         <Route path="/productos" element={<Productos />} />
-        {/* Las rutas de carrito y checkout ya no están aquí, se protegen directamente en App.js */}
+        
       </Routes>
     </div>
   );

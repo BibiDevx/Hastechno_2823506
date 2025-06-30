@@ -8,7 +8,7 @@ use App\Models\Producto;
 use App\Models\Cliente;
 use Illuminate\Support\Facades\Validator;
 
-class CarritoController extends BaseController // O simplemente extends Controller, según tu setup
+class carritoController extends BaseController // O simplemente extends Controller, según tu setup
 {
     /**
      * Obtener el carrito del cliente autenticado o del invitado.

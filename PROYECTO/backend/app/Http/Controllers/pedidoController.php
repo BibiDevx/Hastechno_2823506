@@ -14,19 +14,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log; // Para depuración
 use Illuminate\Support\Facades\Validator; // Para validación
 
-class PedidoController extends Controller
+class pedidoController extends Controller
 {
-    /**
-     * Procesa la creación de un nuevo pedido.
-     * Recibe los productos del carrito, crea el pedido, actualiza el stock
-     * de los productos y genera una factura.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function store(Request $request)
     {
-        Log::info('PedidoController@store - Solicitud de pedido recibida', ['request_data' => $request->all()]);
+        Log::info('pedidoController@store - Solicitud de pedido recibida', ['request_data' => $request->all()]);
 
         // 1. Validar la solicitud (Añadido 'metodo_pago')
         $validator = Validator::make($request->all(), [
@@ -37,7 +29,7 @@ class PedidoController extends Controller
         ]);
 
         if ($validator->fails()) {
-            Log::error('PedidoController@store - Errores de validación:', ['errors' => $validator->errors()->all()]);
+            Log::error('pedidoController@store - Errores de validación:', ['errors' => $validator->errors()->all()]);
             return response()->json(['message' => 'Errores de validación', 'errors' => $validator->errors()], 422);
         }
 
@@ -45,19 +37,19 @@ class PedidoController extends Controller
         $user = Auth::user();
 
         if (!$user) {
-            Log::error('PedidoController@store - Usuario no autenticado.');
+            Log::error('pedidoController@store - Usuario no autenticado.');
             return response()->json(['message' => 'Debes iniciar sesión para realizar un pedido.'], 401);
         }
 
         $cliente = $user->cliente; 
 
         if (!$cliente) {
-            Log::error('PedidoController@store - No se encontró objeto Cliente asociado para User ID:', ['user_id' => $user->idUsuario ?? 'N/A']);
+            Log::error('pedidoController@store - No se encontró objeto Cliente asociado para User ID:', ['user_id' => $user->idUsuario ?? 'N/A']);
             return response()->json(['message' => 'No se encontró información de cliente asociada a tu usuario. Por favor, completa tu perfil.'], 400);
         }
 
         $idCliente = $cliente->idCliente;
-        Log::info('PedidoController@store - Cliente ID obtenido:', ['cliente_id' => $idCliente]);
+        Log::info('pedidoController@store - Cliente ID obtenido:', ['cliente_id' => $idCliente]);
 
         DB::beginTransaction(); // Iniciar una transacción de base de datos
 
@@ -67,7 +59,7 @@ class PedidoController extends Controller
                 'idCliente' => $idCliente,
                 'fechaPedido' => now(), // Fecha y hora actual
             ]);
-            Log::info('PedidoController@store - Pedido principal creado:', ['pedido_id' => $pedido->idPedido]);
+            Log::info('pedidoController@store - Pedido principal creado:', ['pedido_id' => $pedido->idPedido]);
 
             // Se elimina $totalPedidoCalculado ya que no se usará en Factura::create()
             // $totalPedidoCalculado = 0; 
@@ -79,14 +71,14 @@ class PedidoController extends Controller
                 // Verificar si el producto existe
                 if (!$producto) {
                     DB::rollBack();
-                    Log::error('PedidoController@store - Producto no encontrado con ID:', ['idProducto' => $item['idProducto']]);
+                    Log::error('pedidoController@store - Producto no encontrado con ID:', ['idProducto' => $item['idProducto']]);
                     return response()->json(['message' => 'Producto no encontrado: ID ' . $item['idProducto']], 400);
                 }
                 
                 // Verificar stock usando 'cantidadStock'
                 if ($producto->cantidadStock < $item['cantidad']) { 
                     DB::rollBack();
-                    Log::error('PedidoController@store - Stock insuficiente para producto:', [
+                    Log::error('pedidoController@store - Stock insuficiente para producto:', [
                         'idProducto' => $producto->idProducto,
                         'solicitado' => $item['cantidad'],
                         'stock_actual' => $producto->cantidadStock
@@ -106,7 +98,7 @@ class PedidoController extends Controller
                     'cantidadProducto' => $item['cantidad'],
                     'valorTotal' => $valorTotalProducto,
                 ]);
-                Log::info('PedidoController@store - Detalle de pedido añadido:', ['idPedido' => $pedido->idPedido, 'idProducto' => $item['idProducto'], 'cantidad' => $item['cantidad']]);
+                Log::info('pedidoController@store - Detalle de pedido añadido:', ['idPedido' => $pedido->idPedido, 'idProducto' => $item['idProducto'], 'cantidad' => $item['cantidad']]);
 
                 // Restar de 'cantidadStock'
                 $producto->cantidadStock -= $item['cantidad'];
@@ -118,7 +110,7 @@ class PedidoController extends Controller
                     $producto->disponibilidad = 1; // Asegurarse de que esté disponible si hay stock > 0
                 }
                 $producto->save();
-                Log::info('PedidoController@store - Stock y disponibilidad actualizados para producto:', [
+                Log::info('pedidoController@store - Stock y disponibilidad actualizados para producto:', [
                     'idProducto' => $producto->idProducto,
                     'nuevo_stock' => $producto->cantidadStock,
                     'nueva_disponibilidad' => $producto->disponibilidad
@@ -134,7 +126,7 @@ class PedidoController extends Controller
                 // Aquí podrías generar 'numeroFactura' si es autogenerado por el backend
                 // 'numeroFactura' => 'FAC-' . str_pad($pedido->idPedido, 5, '0', STR_PAD_LEFT) . '-' . now()->format('Ymd'), 
             ]);
-            Log::info('PedidoController@store - Factura generada para pedido:', [
+            Log::info('pedidoController@store - Factura generada para pedido:', [
                 'idPedido' => $pedido->idPedido, 
                 'metodoPago' => $request->input('metodo_pago'),
                 // 'totalFactura' => $totalPedidoCalculado // ❌ ELIMINADO del log
@@ -142,7 +134,7 @@ class PedidoController extends Controller
 
             // 7. Vaciar el carrito del cliente (solo los ítems de ese cliente)
             Carrito::where('idCliente', $idCliente)->delete();
-            Log::info('PedidoController@store - Carrito vaciado para cliente:', ['idCliente' => $idCliente]);
+            Log::info('pedidoController@store - Carrito vaciado para cliente:', ['idCliente' => $idCliente]);
 
             DB::commit(); // Confirmar la transacción: todos los cambios se guardan permanentemente
 
@@ -154,7 +146,7 @@ class PedidoController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack(); // Revertir la transacción: deshace todos los cambios
-            Log::error('PedidoController@store - Excepción capturada:', [
+            Log::error('pedidoController@store - Excepción capturada:', [
                 'mensaje' => $e->getMessage(),
                 'archivo' => $e->getFile(),
                 'línea' => $e->getLine(),
@@ -164,12 +156,6 @@ class PedidoController extends Controller
         }
     }
 
-    /**
-     * Obtiene el historial de pedidos del usuario autenticado.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function index(Request $request)
     {
         $user = Auth::user();
@@ -186,12 +172,6 @@ class PedidoController extends Controller
         return response()->json($pedidos);
     }
 
-    /**
-     * Muestra los detalles de un pedido específico por su ID.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function show($id)
     {
         $user = Auth::user();
@@ -211,13 +191,6 @@ class PedidoController extends Controller
 
         return response()->json($pedido);
     }
-
-    /**
-     * Obtiene todos los ítems de productos comprados por el usuario.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function getUserPurchaseItems(Request $request)
     {
         $user = Auth::user();

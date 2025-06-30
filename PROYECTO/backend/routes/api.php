@@ -10,12 +10,11 @@ use App\Http\Controllers\rolController;
 use App\Http\Controllers\proveedorController;
 use App\Http\Controllers\facturaController;
 use App\Http\Controllers\pedidoController;
-use App\Http\Controllers\pedidoProductoController;
 use App\Http\Controllers\carritoController;
 use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Support\Facades\Route;
 
-use App\Http\Controllers\ForgotPasswordController; 
+use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\ResetPasswordController;
 ///GLOBAL
 
@@ -52,11 +51,11 @@ Route::middleware(['auth:api', 'role:Cliente'])->prefix('clientes')->group(funct
     Route::delete('/eliminar/cuenta', [clienteController::class, 'destroy']);
 });
 Route::middleware(['auth:api', 'role:Cliente'])->prefix('p')->group(function () {
-// Pedidos
-    Route::post('/pedidos', [PedidoController::class, 'store']); // O 'store' si usas Resource
-    Route::get('/pedidos', [PedidoController::class, 'index']); // Para obtener todos los pedidos (del usuario autenticado)
-    Route::get('/pedidos/{id}', [PedidoController::class, 'show']); 
-    Route::get('/mis-productos-comprados', [PedidoController::class, 'getUserPurchaseItems']);
+    // Pedidos
+    Route::post('/pedidos', [pedidoController::class, 'store']); // O 'store' si usas Resource
+    Route::get('/pedidos', [pedidoController::class, 'index']); // Para obtener todos los pedidos (del usuario autenticado)
+    Route::get('/pedidos/{id}', [pedidoController::class, 'show']);
+    Route::get('/mis-productos-comprados', [pedidoController::class, 'getUserPurchaseItems']);
 });
 
 /////////////////////////////////////////////////////////////////////////
@@ -93,6 +92,31 @@ Route::middleware(['auth:api', 'role:SuperAdmin'])->prefix('control')->group(fun
     Route::patch('/roles/actualizar/{id}', [rolController::class, 'updatePartial'])->where('id', '[0-9]+'); // Actualización parcial
     Route::delete('/roles/eliminar/{id}', [rolController::class, 'destroy'])->where('id', '[0-9]+');
 });
+Route::middleware(['auth:api', 'role:SuperAdmin'])->group(function () {
+
+    // Rutas para la gestión de USUARIOS y sus ROLES (operaciones sobre la tabla 'usuario')
+
+    // Obtener la lista completa de usuarios con sus roles asociados
+    // Esta ruta es la que usará `userService.getAllUsersWithRoles`
+    Route::get('/usuarios-con-roles', [usuarioController::class, 'indexUsersWithRoles']);
+
+    // Actualizar el rol de un usuario específico
+    // Esta ruta es la que usará `userService.updateUserRole`
+    Route::patch('/usuarios/{idUsuario}/actualizar-rol', [usuarioController::class, 'updateRol'])
+        ->where('idUsuario', '[0-9]+');
+
+    // Obtener los detalles de un usuario específico por ID
+    // Esta ruta es la que usará `userService.getUserById` (si lo implementas en el frontend)
+    Route::get('/usuarios/{idUsuario}', [usuarioController::class, 'show'])
+        ->where('idUsuario', '[0-9]+');
+
+    // Eliminar un usuario específico por ID
+    // Esta ruta es la que usará `userService.deleteUser`
+    Route::delete('/usuarios/{idUsuario}', [usuarioController::class, 'destroy'])
+        ->where('idUsuario', '[0-9]+');
+
+    // Ruta para solicitar el enlace de restablecimiento (la que usa tu frontend ahora)
+});
 ///////////////////////////////////////////////////////////////////////
 //PRODUCTOS
 Route::middleware(['auth:api', 'role:Admin'])->prefix('productos')->group(function () {
@@ -124,61 +148,24 @@ Route::middleware(['auth:api', 'role:Admin'])->prefix('proveedores')->group(func
     Route::patch('/actualizar/{id}', [proveedorController::class, 'updatePartial'])->where('id', '[0-9]+');
     Route::delete('/eliminar/{id}', [proveedorController::class, 'destroy'])->where('id', '[0-9]+');
 });
-/////////Faltantes por probar y asignar
-// Productos por pedido
-Route::get('/pedido/{idPedido}/productos', [PedidoProductoController::class, 'index']);
-Route::post('/pedido-producto', [PedidoProductoController::class, 'store']);
 // Carrito
-Route::get('/carrito', [CarritoController::class, 'index']);
-Route::post('/carrito', [CarritoController::class, 'store']);
-Route::patch('/carrito/{idCarrito}', [CarritoController::class, 'update']);
-Route::delete('/carrito/{idCarrito}', [CarritoController::class, 'destroy']);
-Route::post('/carrito/vaciar', [CarritoController::class, 'clearCart']);
+Route::get('/carrito', [carritoController::class, 'index']);
+Route::post('/carrito', [carritoController::class, 'store']);
+Route::patch('/carrito/{idCarrito}', [carritoController::class, 'update']);
+Route::delete('/carrito/{idCarrito}', [carritoController::class, 'destroy']);
+Route::post('/carrito/vaciar', [carritoController::class, 'clearCart']);
 
 // Ruta para fusionar el carrito de invitado al iniciar sesión
-// ESTA RUTA SÍ DEBE ESTAR PROTEGIDA y solo es para usuarios autenticados
-Route::middleware(['auth:api','role:Cliente'])->group(function () {
-    Route::post('/carrito/fusionar', [CarritoController::class, 'mergeGuestCart']);
-    // Opcional: Si quieres que las operaciones de carrito de USUARIOS logueados *solo* se hagan
-    // a través de rutas con autenticación obligatoria, podrías duplicar las de arriba
-    // y ponerlas aquí con auth:api y eliminar el chequeo de guestId en los métodos del controlador.
-    // Pero la implementación actual del controlador es más flexible.
+Route::middleware(['auth:api', 'role:Cliente'])->group(function () {
+    Route::post('/carrito/fusionar', [carritoController::class, 'mergeGuestCart']);
 });
 
 
 // Factura
-Route::get('/factura/pedido/{idPedido}', [FacturaController::class, 'show']);
-Route::post('/factura', [FacturaController::class, 'store']);
+Route::get('/factura/pedido/{idPedido}', [facturaController::class, 'show']);
 
-Route::middleware(['auth:api', 'role:SuperAdmin'])->group(function () {
 
-    // Rutas para la gestión de USUARIOS y sus ROLES (operaciones sobre la tabla 'usuario')
-
-    // Obtener la lista completa de usuarios con sus roles asociados
-    // Esta ruta es la que usará `userService.getAllUsersWithRoles`
-    Route::get('/usuarios-con-roles', [UsuarioController::class, 'indexUsersWithRoles']);
-
-    // Actualizar el rol de un usuario específico
-    // Esta ruta es la que usará `userService.updateUserRole`
-    Route::patch('/usuarios/{idUsuario}/actualizar-rol', [UsuarioController::class, 'updateRol'])
-        ->where('idUsuario', '[0-9]+');
-
-    // Obtener los detalles de un usuario específico por ID
-    // Esta ruta es la que usará `userService.getUserById` (si lo implementas en el frontend)
-    Route::get('/usuarios/{idUsuario}', [UsuarioController::class, 'show'])
-        ->where('idUsuario', '[0-9]+');
-
-    // Eliminar un usuario específico por ID
-    // Esta ruta es la que usará `userService.deleteUser`
-    Route::delete('/usuarios/{idUsuario}', [UsuarioController::class, 'destroy'])
-        ->where('idUsuario', '[0-9]+');
-
-    // ... aquí irían también tus otras rutas protegidas por SuperAdmin
-    // como las de roles (control/roles/...) y las de admin (users/...)
-
-    // Ruta para solicitar el enlace de restablecimiento (la que usa tu frontend ahora)
 Route::post('auth/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
 
 // Ruta para restablecer la contraseña (para cuando el usuario haga clic en el enlace del email)
 Route::post('auth/reset-password', [ResetPasswordController::class, 'reset'])->name('password.update');
-});

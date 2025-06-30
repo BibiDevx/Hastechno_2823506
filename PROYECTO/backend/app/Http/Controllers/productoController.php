@@ -7,7 +7,7 @@ use App\Models\Producto;
 use App\Http\Controllers\BaseController; // Asegúrate de que BaseController esté disponible
 use Illuminate\Support\Facades\Validator; // Necesario para Validator
 
-class ProductoController extends BaseController
+class productoController extends BaseController
 {
     /**
      * Obtiene los productos más recientes y disponibles para la página de inicio.
