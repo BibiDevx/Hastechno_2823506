@@ -12,6 +12,7 @@ use App\Http\Controllers\facturaController;
 use App\Http\Controllers\pedidoController;
 use App\Http\Controllers\carritoController;
 use App\Http\Controllers\AdminDashboardController;
+
 use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Support\Facades\Route;
 
@@ -186,3 +187,4 @@ Route::get('/factura/pedido/{idPedido}', [facturaController::class, 'show']);
 
 // Ruta para restablecer la contraseña (para cuando el usuario haga clic en el enlace del email)
 //Route::post('auth/reset-password', [ResetPasswordController::class, 'reset'])->name('password.update');
+
