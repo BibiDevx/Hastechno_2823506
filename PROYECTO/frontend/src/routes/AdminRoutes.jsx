@@ -12,6 +12,7 @@ import RolesAdmin from "../pages/admin/RolesAdmin";
 import Roles from "../pages/admin/Roles";
 import Proveedor from "../pages/admin/Proveedor";
 import ProductoCategorias from '../components/admin/productosCategorias'; // Mover aquí para que esté bajo /admin/*
+import ProductosBajoStock from "../pages/admin/ProductosBajoStock";
 
 export default function AdminRoutes() {
   return (
@@ -19,6 +20,7 @@ export default function AdminRoutes() {
       {/* Todas estas rutas están protegidas por el ProtectedRoute que las envuelve en App.js */}
       <Route path="/" element={<Dashboard />} />
       <Route path="/productos" element={<ProductosAdmin />} />
+      <Route path="/productos-stock-bajo" element={<ProductosBajoStock />} />
       <Route path="/pedidos" element={<PedidosAdmin />} />
       <Route path="/usuarios/admin" element={<UsuariosAdmin />} />
       <Route path="/usuarios-y-roles" element={<RolesAdmin />} />

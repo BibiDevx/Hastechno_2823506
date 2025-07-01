@@ -73,6 +73,24 @@ const pedidoService = {
       throw error;
     }
   },
+  getAdminOrders: async () => {
+   try {
+      const token = localStorage.getItem('token'); // ✅ Asegúrate que es 'token' y no 'authToken'
+      const config = {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        }
+      };
+      const response = await axios.get(`${API_BASE_URL}/admin/pedidos`,config); 
+      return response.data.data || response.data; // Ajusta si tu API envuelve los datos en 'data'
+    } catch (error) {
+      console.error('Error en pedidoService.getAdminOrders:', error.response?.data || error.message);
+      throw error;
+    }
+  }
 };
+
 
 export default pedidoService;

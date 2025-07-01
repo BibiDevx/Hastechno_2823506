@@ -1,7 +1,6 @@
-// src/components/UsuariosAdmin.js
+// src/components/admin/UsuariosAdmin.js
 import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Modal, Button } from "react-bootstrap"; // Importa componentes de Modal y Button de react-bootstrap
 import adminService from "../../services/adminService"; // Asegúrate de que la ruta sea correcta
 
 export default function UsuariosAdmin() {
@@ -26,7 +25,9 @@ export default function UsuariosAdmin() {
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true); // Para la carga inicial y operaciones
   const [isSaving, setIsSaving] = useState(false); // Nuevo estado para indicar si se está guardando/eliminando
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(null); // Para errores globales
+  const [modalError, setModalError] = useState(null); // Para errores dentro del modal
+  const [modalSuccess, setModalSuccess] = useState(null); // Para mensajes de éxito dentro del modal
 
   // Estados para el modal de confirmación de eliminación
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
@@ -63,6 +64,8 @@ export default function UsuariosAdmin() {
 
   const handleShowModal = (type, admin = null) => {
     setModalType(type);
+    setModalError(null); // Limpiar errores previos al abrir el modal
+    setModalSuccess(null); // Limpiar mensajes de éxito previos al abrir el modal
     if (admin) {
       setFormData({
         idAdmin: admin.idAdmin,
@@ -85,11 +88,10 @@ export default function UsuariosAdmin() {
         idUsuario: null,
         email: "",
         password: "",
-        c_password: "", // Limpiar también la confirmación
+        c_password: "",
       });
     }
     setShowModal(true);
-    setError(null); // Limpiar errores previos al abrir el modal
   };
 
   const handleCloseModal = () => {
@@ -105,7 +107,8 @@ export default function UsuariosAdmin() {
       password: "",
       c_password: "",
     });
-    setError(null); // Limpiar errores al cerrar el modal
+    setModalError(null); // Limpiar errores al cerrar el modal
+    setModalSuccess(null); // Limpiar mensajes de éxito al cerrar el modal
   };
 
   const handleChange = (e) => {
@@ -113,6 +116,10 @@ export default function UsuariosAdmin() {
   };
 
   const handleSaveAdmin = async () => {
+    setModalError(null); // Limpiar errores antes de guardar
+    setModalSuccess(null); // Limpiar mensajes de éxito antes de guardar
+    setIsSaving(true); // Activar estado de guardado
+
     // Validaciones de frontend
     if (
       !formData.nombreAdmin.trim() ||
@@ -121,38 +128,41 @@ export default function UsuariosAdmin() {
       !formData.telefonoAdmin.trim() ||
       !formData.cedulaAdmin.trim()
     ) {
-      setError("Todos los campos obligatorios deben ser completados.");
+      setModalError("Todos los campos obligatorios deben ser completados.");
+      setIsSaving(false);
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      setError("Por favor, ingrese un correo electrónico válido.");
+      setModalError("Por favor, ingrese un correo electrónico válido.");
+      setIsSaving(false);
       return;
     }
     // Validación de teléfono para 10 dígitos (ajusta según tu necesidad)
     if (!/^\d{10}$/.test(formData.telefonoAdmin)) {
-      setError("El teléfono debe contener exactamente 10 dígitos numéricos.");
+      setModalError("El teléfono debe contener exactamente 10 dígitos numéricos.");
+      setIsSaving(false);
       return;
     }
 
     // Validación específica para 'agregar' (la contraseña y c_password son obligatorias)
     if (modalType === "agregar") {
       if (!formData.password.trim()) {
-        setError("La contraseña es obligatoria para agregar un nuevo administrador.");
+        setModalError("La contraseña es obligatoria para agregar un nuevo administrador.");
+        setIsSaving(false);
         return;
       }
       if (formData.password !== formData.c_password) {
-        setError("La contraseña y la confirmación de contraseña no coinciden.");
+        setModalError("La contraseña y la confirmación de contraseña no coinciden.");
+        setIsSaving(false);
         return;
       }
     } else { // Validaciones para 'editar'
       if (formData.password.trim() !== '' && formData.password !== formData.c_password) {
-        setError("La nueva contraseña y su confirmación no coinciden.");
+        setModalError("La nueva contraseña y su confirmación no coinciden.");
+        setIsSaving(false);
         return;
       }
     }
-
-    setIsSaving(true); // Activar estado de guardado
-    setError(null); // Limpiar errores antes de intentar guardar
 
     try {
       let response;
@@ -163,14 +173,14 @@ export default function UsuariosAdmin() {
 
         if (response.admin) {
           setAdmins((prevAdmins) => [...prevAdmins, response.admin]);
-          alert("Administrador agregado correctamente."); // Feedback de éxito
+          setModalSuccess("Administrador agregado correctamente."); // Feedback de éxito
         } else {
           throw new Error("Respuesta inesperada del servidor al registrar el administrador.");
         }
       } else {
         // modalType === "editar"
         if (!formData.idAdmin) {
-          setError("ID de administrador no válido para editar.");
+          setModalError("ID de administrador no válido para editar.");
           setIsSaving(false); 
           return;
         }
@@ -194,10 +204,11 @@ export default function UsuariosAdmin() {
             admin.idAdmin === updatedAdmin.idAdmin ? updatedAdmin : admin
           )
         );
-        alert("Administrador actualizado correctamente."); // Feedback de éxito
+        setModalSuccess("Administrador actualizado correctamente."); // Feedback de éxito
       }
 
-      handleCloseModal(); // Cerrar modal al guardar con éxito
+      // Opcional: Cerrar modal al guardar con éxito después de un breve retraso
+      // setTimeout(() => handleCloseModal(), 1500); 
     } catch (err) {
       console.error("Error al guardar el administrador:", err);
       let errorMessage =
@@ -216,10 +227,9 @@ export default function UsuariosAdmin() {
               errorMessage = err.response.data.error; 
           }
       }
-      setError(errorMessage);
+      setModalError(errorMessage); // Mostrar error en el modal
     } finally {
       setIsSaving(false); // Desactivar estado de guardado
-      setLoading(false); // Asegurarse de que se resetea el loading
     }
   };
 
@@ -235,23 +245,21 @@ export default function UsuariosAdmin() {
     if (!adminToDeleteId) return;
 
     setIsSaving(true); // Activar estado de guardado/eliminación
-    setError(null); // Limpiar errores previos
+    setError(null); // Limpiar errores previos (globales)
 
     try {
       const response = await adminService.deleteAdmin(adminToDeleteId);
       if (response.success) {
         setAdmins((prevAdmins) => prevAdmins.filter((admin) => admin.idAdmin !== adminToDeleteId));
-        setError(null);
-        alert("Administrador eliminado correctamente."); // Feedback de éxito
+        // Puedes añadir un mensaje de éxito global aquí si lo deseas
       } else {
         throw new Error(response.message || "Fallo al eliminar el administrador.");
       }
     } catch (err) {
       console.error("Error al eliminar el administrador:", err);
-      setError(err.response?.data?.message || "Error al eliminar el administrador.");
+      setError(err.response?.data?.message || "Error al eliminar el administrador."); // Mostrar error global
     } finally {
       setIsSaving(false); // Desactivar estado de guardado/eliminación
-      setLoading(false); // Asegurarse de que se resetea el loading
       setAdminToDeleteId(null); // Limpiar ID del admin a eliminar
     }
   };
@@ -259,50 +267,55 @@ export default function UsuariosAdmin() {
   // Renderizado condicional para el estado de carga inicial
   if (loading && !admins.length && !error) {
     return (
-      <div className="container mt-4 text-center">
+      <div className="container mt-5 text-center py-5">
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Cargando administradores...</span>
         </div>
-        <p className="mt-2 text-muted">Cargando lista de administradores...</p>
+        <p className="mt-3 text-muted fs-5">Cargando lista de administradores...</p>
       </div>
     );
   }
 
-  // Renderizado condicional para el error global (no del modal)
-  if (error && !showModal && !loading) {
-    return <div className="container mt-4 alert alert-danger">{error}</div>;
-  }
-
   return (
-    <div className="container mt-4">
-      <h2 className="mb-4">Administrar Administradores</h2>
+    <div className="container mt-5 mb-5 p-3">
+      <h1 className="text-center mb-5 fw-bold text-primary">
+        <i className="bi bi-person-gear-fill me-3"></i>Administrar Administradores
+      </h1>
 
-     
-      <button 
-        className="btn btn-success mb-3" 
-        onClick={() => handleShowModal("agregar")}
-      >
-        <i className="bi bi-person-plus-fill me-2"></i> Agregar Administrador
-      </button>
+      {/* Mensaje de error global (si no hay modal abierto) */}
+      {error && !showModal && (
+        <div className="alert alert-danger text-center animated fadeIn mb-4" role="alert">
+          <i className="bi bi-exclamation-triangle-fill me-2"></i> {error}
+        </div>
+      )}
 
-      <div className="table-responsive"> 
-        <table className="table table-bordered table-hover shadow-sm"> 
+      <div className="d-flex justify-content-end mb-3"> {/* Botón a la derecha */}
+        <button 
+          className="btn btn-success rounded-pill fw-semibold shadow-sm" 
+          onClick={() => handleShowModal("agregar")}
+        >
+          <i className="bi bi-person-plus-fill me-2"></i> Agregar Administrador
+        </button>
+      </div>
+
+      <div className="table-responsive shadow-sm rounded-lg"> 
+        <table className="table table-hover table-striped align-middle"> 
           <thead className="table-dark">
             <tr>
-              <th>ID</th>
-              <th>Nombre</th>
-              <th>Apellido</th>
-              <th>Cédula</th>
-              <th>Correo</th>
-              <th>Teléfono</th>
-              <th className="text-center">Acciones</th>
+              <th scope="col">ID</th>
+              <th scope="col">Nombre</th>
+              <th scope="col">Apellido</th>
+              <th scope="col">Cédula</th>
+              <th scope="col">Correo</th>
+              <th scope="col">Teléfono</th>
+              <th scope="col" className="text-center" style={{ minWidth: '180px' }}>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {Array.isArray(admins) && admins.length > 0 ? (
               admins.map((admin) => (
                 <tr key={admin.idAdmin}>
-                  <td>{admin.idAdmin}</td>
+                  <td className="fw-bold">{admin.idAdmin}</td>
                   <td>{admin.nombreAdmin}</td>
                   <td>{admin.apellidoAdmin}</td>
                   <td>{admin.cedulaAdmin}</td>
@@ -310,14 +323,14 @@ export default function UsuariosAdmin() {
                   <td>{admin.telefonoAdmin}</td>
                   <td className="text-center">
                     <button
-                      className="btn btn-primary btn-sm me-2"
+                      className="btn btn-primary btn-sm me-2 rounded-pill fw-semibold"
                       onClick={() => handleShowModal("editar", admin)}
                       disabled={isSaving} // Deshabilitar durante el guardado/eliminación
                     >
                       <i className="bi bi-pencil-fill me-1"></i> Editar
                     </button>
                     <button
-                      className="btn btn-danger btn-sm"
+                      className="btn btn-danger btn-sm rounded-pill fw-semibold"
                       onClick={() => confirmDelete(admin.idAdmin)} // Usa el nuevo manejador para el modal de confirmación
                       disabled={isSaving} // Deshabilitar durante el guardado/eliminación
                     >
@@ -328,7 +341,7 @@ export default function UsuariosAdmin() {
               ))
             ) : (
               <tr>
-                <td colSpan="7" className="text-center py-4 text-muted"> 
+                <td colSpan="7" className="text-center py-4 text-muted fs-5"> 
                   No se encontraron administradores.
                 </td>
               </tr>
@@ -337,65 +350,77 @@ export default function UsuariosAdmin() {
         </table>
       </div>
 
-      
+      {/* Modal para agregar/editar administrador */}
       {showModal && (
         <div className="modal fade show d-block" tabIndex="-1" role="dialog" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered" role="document">
-            <div className="modal-content">
-              <div className="modal-header bg-primary text-white">
-                <h5 className="modal-title">
+          <div className="modal-dialog modal-dialog-centered modal-lg" role="document"> {/* Tamaño grande */}
+            <div className="modal-content rounded-3 shadow-lg">
+              <div className="modal-header bg-primary text-white rounded-top-3">
+                <h5 className="modal-title fw-bold">
+                  <i className={`bi ${modalType === "agregar" ? "bi-person-plus-fill" : "bi-pencil-fill"} me-2`}></i>
                   {modalType === "agregar"
-                    ? "Agregar Administrador"
+                    ? "Agregar Nuevo Administrador"
                     : "Editar Administrador"}
                 </h5>
                 <button
                   type="button"
                   className="btn-close btn-close-white"
                   onClick={handleCloseModal}
-                  disabled={isSaving} // Deshabilitar durante el guardado
+                  disabled={isSaving}
                 ></button>
               </div>
-              <div className="modal-body">
-                {error && <div className="alert alert-danger mb-3">{error}</div>}
+              <div className="modal-body p-4">
+                {modalError && (
+                  <div className="alert alert-danger text-center animated fadeIn mb-3" role="alert">
+                    <i className="bi bi-exclamation-triangle-fill me-2"></i> {modalError}
+                  </div>
+                )}
+                {modalSuccess && (
+                  <div className="alert alert-success text-center animated fadeIn mb-3" role="alert">
+                    <i className="bi bi-check-circle-fill me-2"></i> {modalSuccess}
+                  </div>
+                )}
                 <form onSubmit={(e) => e.preventDefault()}>
-                  <div className="mb-3">
-                    <label htmlFor="nombreAdmin" className="form-label">
-                      Nombre
-                    </label>
-                    <input
-                      type="text"
-                      id="nombreAdmin"
-                      className="form-control"
-                      name="nombreAdmin"
-                      value={formData.nombreAdmin}
-                      onChange={handleChange}
-                      required
-                      disabled={isSaving}
-                    />
+                  <div className="row g-3 mb-3">
+                    <div className="col-md-6">
+                      <label htmlFor="nombreAdmin" className="form-label fw-semibold">
+                        <i className="bi bi-person-fill me-2"></i>Nombre
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control form-control-lg rounded-pill"
+                        id="nombreAdmin"
+                        name="nombreAdmin"
+                        value={formData.nombreAdmin}
+                        onChange={handleChange}
+                        required
+                        disabled={isSaving}
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label htmlFor="apellidoAdmin" className="form-label fw-semibold">
+                        <i className="bi bi-person-fill me-2"></i>Apellido
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control form-control-lg rounded-pill"
+                        id="apellidoAdmin"
+                        name="apellidoAdmin"
+                        value={formData.apellidoAdmin}
+                        onChange={handleChange}
+                        required
+                        disabled={isSaving}
+                      />
+                    </div>
                   </div>
                   <div className="mb-3">
-                    <label htmlFor="apellidoAdmin" className="form-label">
-                      Apellido
+                    <label htmlFor="cedulaAdmin" className="form-label fw-semibold">
+                      <i className="bi bi-credit-card-fill me-2"></i>Cédula
                     </label>
                     <input
                       type="text"
-                      id="apellidoAdmin"
-                      className="form-control"
-                      name="apellidoAdmin"
-                      value={formData.apellidoAdmin}
-                      onChange={handleChange}
-                      required
-                      disabled={isSaving}
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label htmlFor="cedulaAdmin" className="form-label">
-                      Cédula
-                    </label>
-                    <input
-                      type="text"
+                      className="form-control form-control-lg rounded-pill"
                       id="cedulaAdmin"
-                      className="form-control"
                       name="cedulaAdmin"
                       value={formData.cedulaAdmin}
                       onChange={handleChange}
@@ -404,13 +429,13 @@ export default function UsuariosAdmin() {
                     />
                   </div>
                   <div className="mb-3">
-                    <label htmlFor="email" className="form-label">
-                      Correo
+                    <label htmlFor="email" className="form-label fw-semibold">
+                      <i className="bi bi-envelope-fill me-2"></i>Correo
                     </label>
                     <input
                       type="email"
+                      className="form-control form-control-lg rounded-pill"
                       id="email"
-                      className="form-control"
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
@@ -419,13 +444,13 @@ export default function UsuariosAdmin() {
                     />
                   </div>
                   <div className="mb-3">
-                    <label htmlFor="telefonoAdmin" className="form-label">
-                      Teléfono
+                    <label htmlFor="telefonoAdmin" className="form-label fw-semibold">
+                      <i className="bi bi-telephone-fill me-2"></i>Teléfono
                     </label>
                     <input
                       type="text"
+                      className="form-control form-control-lg rounded-pill"
                       id="telefonoAdmin"
-                      className="form-control"
                       name="telefonoAdmin"
                       value={formData.telefonoAdmin}
                       onChange={handleChange}
@@ -434,15 +459,16 @@ export default function UsuariosAdmin() {
                     />
                   </div>
                   <div className="mb-3">
-                    <label htmlFor="password" className="form-label">
+                    <label htmlFor="password" className="form-label fw-semibold">
+                      <i className="bi bi-lock-fill me-2"></i>
                       {modalType === "agregar"
                         ? "Contraseña"
                         : "Nueva Contraseña (opcional)"}
                     </label>
                     <input
                       type="password"
+                      className="form-control form-control-lg rounded-pill"
                       id="password"
-                      className="form-control"
                       name="password"
                       value={formData.password}
                       onChange={handleChange}
@@ -450,16 +476,16 @@ export default function UsuariosAdmin() {
                       disabled={isSaving}
                     />
                   </div>
-                 
+                  
                   {(modalType === "agregar" || formData.password.trim() !== '') && (
                     <div className="mb-3">
-                      <label htmlFor="c_password" className="form-label">
-                        Confirmar Contraseña
+                      <label htmlFor="c_password" className="form-label fw-semibold">
+                        <i className="bi bi-lock-fill me-2"></i>Confirmar Contraseña
                       </label>
                       <input
                         type="password"
+                        className="form-control form-control-lg rounded-pill"
                         id="c_password"
-                        className="form-control"
                         name="c_password"
                         value={formData.c_password}
                         onChange={handleChange}
@@ -470,55 +496,68 @@ export default function UsuariosAdmin() {
                   )}
                 </form>
               </div>
-              <div className="modal-footer">
-                <Button
-                  variant="secondary"
-                  className="rounded-pill fw-semibold me-2"
+              <div className="modal-footer rounded-bottom-3">
+                <button
+                  type="button"
+                  className="btn btn-secondary rounded-pill fw-semibold me-2"
                   onClick={handleCloseModal}
                   disabled={isSaving}
                 >
                   <i className="bi bi-x-circle-fill me-2"></i> Cerrar
-                </Button>
-                <Button
-                  variant="primary"
-                  className="rounded-pill fw-semibold"
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary rounded-pill fw-semibold"
                   onClick={handleSaveAdmin}
                   disabled={isSaving}
                 >
                   <i className="bi bi-save-fill me-2"></i> {isSaving ? "Guardando..." : "Guardar"}
-                </Button>
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      <Modal show={showDeleteConfirmModal} onHide={() => setShowDeleteConfirmModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title className="text-danger fw-bold"><i className="bi bi-exclamation-triangle-fill me-2"></i> Confirmar Eliminación</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          ¿Estás seguro de que deseas eliminar este administrador y su usuario asociado? Esta acción es irreversible.
-        </Modal.Body>
-        <Modal.Footer className="justify-content-end">
-          <Button 
-            variant="secondary" 
-            className="rounded-pill fw-semibold" 
-            onClick={() => setShowDeleteConfirmModal(false)}
-            disabled={isSaving}
-          >
-            Cerrar
-          </Button>
-          <Button 
-            variant="danger" 
-            className="rounded-pill fw-semibold" 
-            onClick={handleDeleteConfirmed}
-            disabled={isSaving}
-          >
-            <i className="bi bi-trash-fill me-1"></i> Eliminar
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      {/* ✅ Modal de Confirmación de Eliminación (Custom Bootstrap Modal) */}
+      {showDeleteConfirmModal && (
+        <div className="modal fade show d-block" tabIndex="-1" role="dialog" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered" role="document">
+            <div className="modal-content rounded-3 shadow-lg">
+              <div className="modal-header bg-danger text-white rounded-top-3">
+                <h5 className="modal-title fw-bold">
+                  <i className="bi bi-exclamation-triangle-fill me-2"></i> Confirmar Eliminación
+                </h5>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setShowDeleteConfirmModal(false)}></button>
+              </div>
+              <div className="modal-body p-4 text-center">
+                <p className="fs-5 mb-4">¿Estás seguro de que deseas eliminar este administrador y su usuario asociado?</p>
+                <p className="text-muted small">Esta acción es irreversible.</p>
+              </div>
+              <div className="modal-footer rounded-bottom-3 justify-content-center">
+                <button
+                  type="button"
+                  className="btn btn-secondary rounded-pill fw-semibold me-3"
+                  onClick={() => setShowDeleteConfirmModal(false)}
+                >
+                  <i className="bi bi-x-circle-fill me-2"></i> Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger rounded-pill fw-semibold"
+                  onClick={handleDeleteConfirmed}
+                >
+                  <i className="bi bi-trash-fill me-2"></i> Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <footer className="bg-dark text-light text-center p-4 mt-5 shadow-lg rounded-top-lg">
+        <p className="mb-0 small">© 2025 PC Componentes | Todos los derechos reservados</p>
+      </footer>
     </div>
   );
 }

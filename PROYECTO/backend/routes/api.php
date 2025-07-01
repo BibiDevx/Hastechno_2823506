@@ -11,11 +11,12 @@ use App\Http\Controllers\proveedorController;
 use App\Http\Controllers\facturaController;
 use App\Http\Controllers\pedidoController;
 use App\Http\Controllers\carritoController;
+use App\Http\Controllers\AdminDashboardController;
 use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Support\Facades\Route;
 
-use App\Http\Controllers\ForgotPasswordController;
-use App\Http\Controllers\ResetPasswordController;
+//use App\Http\Controllers\ForgotPasswordController;
+//use App\Http\Controllers\ResetPasswordController;
 ///GLOBAL
 
 Route::prefix('verProductos')->group(function () {
@@ -57,7 +58,11 @@ Route::middleware(['auth:api', 'role:Cliente'])->prefix('p')->group(function () 
     Route::get('/pedidos/{id}', [pedidoController::class, 'show']);
     Route::get('/mis-productos-comprados', [pedidoController::class, 'getUserPurchaseItems']);
 });
-
+Route::middleware(['auth:api', 'role:Admin'])->prefix('admin')->group(function () {
+    // Pedidos
+    Route::get('/pedidos', [pedidoController::class, 'lista']); // Para obtener todos los pedidos (del usuario autenticado)
+    Route::get('/pedidos/{id}', [pedidoController::class, 'show']);
+});
 /////////////////////////////////////////////////////////////////////////
 ///ADMIN
 //Rutas protegidas para admin (requieren autenticación)
@@ -124,6 +129,7 @@ Route::middleware(['auth:api', 'role:Admin'])->prefix('productos')->group(functi
     Route::post('/registrar', [productoController::class, 'store']);
     Route::patch('/actualizar/{id}', [productoController::class, 'updatePartial'])->where('id', '[0-9]+');
     Route::delete('/eliminar/{id}', [productoController::class, 'destroy'])->where('id', '[0-9]+');
+    Route::get('/productos-bajo-stock', [productoController::class, 'getProductosBajoStock']); 
     // Rutas para la gestión de categorías de un producto
     Route::get('/{id}/categorias', [productoController::class, 'getProductCategories'])->where('id', '[0-9]+');
     Route::patch('/{id}/categorias', [productoController::class, 'syncProductCategories'])->where('id', '[0-9]+');
@@ -160,12 +166,23 @@ Route::middleware(['auth:api', 'role:Cliente'])->group(function () {
     Route::post('/carrito/fusionar', [carritoController::class, 'mergeGuestCart']);
 });
 
+Route::middleware(['auth:api', 'role:Admin'])->prefix('admin')->group(function () {
+    // ... tus otras rutas de admin (ej. /pedidos, /profile) ...
 
+    // Rutas para el Dashboard
+    Route::get('/dashboard/total-ventas', [AdminDashboardController::class, 'getTotalVentas']);
+    Route::get('/dashboard/total-pedidos', [AdminDashboardController::class, 'getTotalPedidos']);
+    Route::get('/dashboard/total-clientes', [AdminDashboardController::class, 'getTotalClientes']);
+    Route::get('/dashboard/productos-bajo-stock', [AdminDashboardController::class, 'getProductosBajoStock']);
+
+    // Opcional: Si usas un solo endpoint para todas las estadísticas
+    // Route::get('/dashboard/stats', [AdminDashboardController::class, 'getAllDashboardStats']);
+});
 // Factura
 Route::get('/factura/pedido/{idPedido}', [facturaController::class, 'show']);
 
 
-Route::post('auth/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
+//Route::post('auth/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
 
 // Ruta para restablecer la contraseña (para cuando el usuario haga clic en el enlace del email)
-Route::post('auth/reset-password', [ResetPasswordController::class, 'reset'])->name('password.update');
+//Route::post('auth/reset-password', [ResetPasswordController::class, 'reset'])->name('password.update');

@@ -1,41 +1,38 @@
-// src/components/UsuariosCliente.js
+// src/components/admin/UsuariosCliente.js
 import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import clientService from "../../services/clientService"; 
+import clientService from "../../services/clientService";
 
 export default function UsuariosCliente() {
   const [showModal, setShowModal] = useState(false);
-  // Eliminamos modalType ya que siempre es "editar" aquí
-
   const [formData, setFormData] = useState({
-    // Campos del modelo Cliente
-    idCliente: null, // Usamos idCliente como PK de la tabla 'cliente'
+    idCliente: null,
     nombreCliente: "",
     apellidoCliente: "",
     cedulaCliente: "",
     telefonoCliente: "",
     direccion: "",
-    // Campos del modelo Usuario (relacionado)
-    idUsuario: null, // El ID de la tabla 'usuario' asociada
+    idUsuario: null,
     email: "",
     password: "", // Contraseña opcional para cambiar en edición
   });
 
   const [clientes, setClientes] = useState([]);
-  const [loading, setLoading] = useState(true); // Para la carga inicial y operaciones
-  const [isSaving, setIsSaving] = useState(false); // Nuevo estado para indicar si se está guardando
-  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState(null); // Para errores globales
+  const [modalError, setModalError] = useState(null); // Para errores dentro del modal
+  const [modalSuccess, setModalSuccess] = useState(null); // Para mensajes de éxito dentro del modal
+  const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState(null);
 
   const fetchClientes = async () => {
     setLoading(true);
     setError(null);
     try {
-      // ✅ CORRECCIÓN CLAVE AQUÍ: clientService.getAllClients() devuelve directamente el array de clientes
-      const clientesData = await clientService.getAllClients(); 
-      
-      // Ahora, solo verificamos si lo que recibimos es realmente un array
+      const clientesData = await clientService.getAllClients();
+
       if (Array.isArray(clientesData)) {
-        // Asume que la API devuelve clientes con la relación 'usuario' cargada
         setClientes(clientesData);
       } else {
         console.error("La API no devolvió una lista de clientes válida (no es un array).");
@@ -44,9 +41,8 @@ export default function UsuariosCliente() {
       }
     } catch (err) {
       console.error("Error al cargar los clientes:", err);
-      // El mensaje de error ya viene formateado desde clientService
       setError("Error al cargar los clientes: " + (err.message || "Error desconocido."));
-      setClientes([]); // Limpiar clientes en caso de error
+      setClientes([]);
     } finally {
       setLoading(false);
     }
@@ -58,7 +54,8 @@ export default function UsuariosCliente() {
 
   const handleShowModal = (cliente) => {
     setShowModal(true);
-    setError(null);
+    setModalError(null); // Limpiar errores del modal
+    setModalSuccess(null); // Limpiar mensajes de éxito del modal
     setFormData({
       idCliente: cliente.idCliente,
       nombreCliente: cliente.nombreCliente,
@@ -66,7 +63,6 @@ export default function UsuariosCliente() {
       cedulaCliente: cliente.cedulaCliente,
       telefonoCliente: cliente.telefonoCliente,
       direccion: cliente.direccion,
-      // Cargamos el email desde el objeto 'usuario' anidado
       idUsuario: cliente.idUsuario,
       email: cliente.usuario ? cliente.usuario.email : "",
       password: "", // Siempre en blanco al abrir para edición
@@ -86,7 +82,8 @@ export default function UsuariosCliente() {
       email: "",
       password: "",
     });
-    setError(null);
+    setModalError(null);
+    setModalSuccess(null);
   };
 
   const handleChange = (e) => {
@@ -94,7 +91,11 @@ export default function UsuariosCliente() {
   };
 
   const handleSaveCliente = async () => {
-    // Validaciones de frontend (adaptadas a los nombres de tus modelos)
+    setModalError(null);
+    setModalSuccess(null);
+    setIsSaving(true);
+
+    // Validaciones de frontend
     if (
       !formData.nombreCliente.trim() ||
       !formData.apellidoCliente.trim() ||
@@ -103,139 +104,143 @@ export default function UsuariosCliente() {
       !formData.cedulaCliente.trim() ||
       !formData.direccion.trim()
     ) {
-      setError("Todos los campos obligatorios deben ser completados.");
+      setModalError("Todos los campos obligatorios deben ser completados.");
+      setIsSaving(false);
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      setError("Por favor, ingrese un correo electrónico válido.");
+      setModalError("Por favor, ingrese un correo electrónico válido.");
+      setIsSaving(false);
+      return;
+    }
+    if (formData.password && formData.password.length < 6) {
+      setModalError("La nueva contraseña debe tener al menos 6 caracteres.");
+      setIsSaving(false);
       return;
     }
 
-    setIsSaving(true); // Activar estado de guardado
-    setError(null); // Limpiar errores antes de intentar guardar
-
     try {
-      // Se envían todos los datos del formulario, incluyendo los del usuario asociado
       const dataToSend = { ...formData };
-      // No enviar los IDs en el cuerpo al PATCH, ya que van en la URL o se gestionan internamente
-      delete dataToSend.idCliente; 
-      delete dataToSend.idUsuario; 
+      delete dataToSend.idCliente;
+      delete dataToSend.idUsuario;
 
-      // Si la contraseña está vacía, no la enviamos para que el backend no la actualice.
       if (!dataToSend.password) {
         delete dataToSend.password;
       }
 
-      // ✅ CORRECCIÓN CLAVE AQUÍ: clientService.updateClient devuelve directamente el objeto cliente actualizado
       const updatedCliente = await clientService.updateClient(formData.idCliente, dataToSend);
 
-      // Actualizar el estado con los datos devueltos por la API (que deben incluir el 'usuario' anidado)
-      // Aseguramos que updatedCliente es un objeto válido antes de mapear
       if (updatedCliente && updatedCliente.idCliente) {
-          setClientes((prevClientes) =>
-            prevClientes.map((cliente) =>
-              cliente.idCliente === updatedCliente.idCliente ? updatedCliente : cliente
-            )
-          );
-          handleCloseModal();
-          setError(null);
-          alert("Cliente actualizado correctamente.");
+        setClientes((prevClientes) =>
+          prevClientes.map((cliente) =>
+            cliente.idCliente === updatedCliente.idCliente ? updatedCliente : cliente
+          )
+        );
+        setModalSuccess("Cliente actualizado correctamente.");
+        // Opcional: cerrar el modal después de un breve tiempo
+        // setTimeout(() => handleCloseModal(), 1500);
       } else {
-          throw new Error("No se pudo actualizar el cliente. Respuesta de la API inválida.");
+        throw new Error("No se pudo actualizar el cliente. Respuesta de la API inválida.");
       }
     } catch (err) {
       console.error("Error al guardar el cliente:", err);
-      // El mensaje de error ya viene formateado desde clientService
-      setError(err.message || 'Error al guardar el cliente. Por favor, intente de nuevo.');
+      setModalError(err.message || 'Error al guardar el cliente. Por favor, intente de nuevo.');
     } finally {
-      setIsSaving(false); // Desactivar estado de guardado
+      setIsSaving(false);
     }
   };
 
-  const handleDeleteCliente = async (id) => {
-    if (window.confirm("¿Estás seguro de que deseas eliminar este cliente y su usuario asociado? Esta acción es irreversible.")) {
-      setIsSaving(true); // Activar estado de guardado (para operaciones de eliminación también)
-      setError(null); // Limpiar errores previos
-      try {
-        // clientService.deleteClient devuelve un objeto { success: true, message: '...' }
-        const response = await clientService.deleteClient(id);
-        
-        // Verificamos la propiedad 'success' en la respuesta
-        if (response.success) {
-          setClientes((prevClientes) => prevClientes.filter((cliente) => cliente.idCliente !== id));
-          setError(null);
-          alert("Cliente eliminado correctamente.");
-        } else {
-          // Si el backend indicó un fallo pero no lanzó un error HTTP
-          throw new Error(response.message || "Fallo al eliminar el cliente.");
-        }
-      } catch (err) {
-        console.error("Error al eliminar el cliente:", err);
-        // El mensaje de error ya viene formateado desde clientService
-        setError(err.message || 'Error al eliminar el cliente.');
-      } finally {
-        setIsSaving(false); // Desactivar estado de guardado
+  // ✅ Función para mostrar el modal de confirmación de eliminación
+  const confirmDelete = (id) => {
+    setClientToDelete(id);
+    setShowConfirmDeleteModal(true);
+  };
+
+  // ✅ Función para ejecutar la eliminación después de la confirmación
+  const handleDeleteConfirmed = async () => {
+    setShowConfirmDeleteModal(false); // Cerrar el modal de confirmación
+    if (!clientToDelete) return;
+
+    setIsSaving(true); // Activar estado de guardado (para operaciones de eliminación también)
+    setError(null); // Limpiar errores previos
+    try {
+      const response = await clientService.deleteClient(clientToDelete);
+
+      if (response.success) {
+        setClientes((prevClientes) => prevClientes.filter((cliente) => cliente.idCliente !== clientToDelete));
+        // Puedes añadir un mensaje de éxito global aquí si lo deseas
+      } else {
+        throw new Error(response.message || "Fallo al eliminar el cliente.");
       }
+    } catch (err) {
+      console.error("Error al eliminar el cliente:", err);
+      setError(err.message || 'Error al eliminar el cliente.');
+    } finally {
+      setIsSaving(false);
+      setClientToDelete(null); // Limpiar el ID del cliente a eliminar
     }
   };
 
   // Renderizado condicional para el estado de carga inicial
   if (loading && !clientes.length && !error) {
     return (
-      <div className="container mt-4 text-center">
+      <div className="container mt-5 text-center py-5">
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Cargando clientes...</span>
         </div>
-        <p className="mt-2 text-muted">Cargando lista de clientes...</p>
+        <p className="mt-3 text-muted fs-5">Cargando lista de clientes...</p>
       </div>
     );
   }
-  
-  // Mostrar error si la carga ha terminado y hay un error global (no del modal)
-  if (error && !showModal && !loading) {
-    return <div className="container mt-4 alert alert-danger">{error}</div>;
-  }
 
   return (
-    <div className="container mt-4">
-      <h2 className="mb-3">Administrar Clientes</h2>
-      
-      
-      <div className="table-responsive"> 
-        <table className="table table-bordered table-hover shadow-sm"> 
-          <thead className="table-dark"> 
+    <div className="container mt-5 mb-5 p-3">
+      <h1 className="text-center mb-5 fw-bold text-primary">
+        <i className="bi bi-people-fill me-3"></i>Administrar Clientes
+      </h1>
+
+      {/* Mensaje de error global (si no hay modal abierto) */}
+      {error && !showModal && (
+        <div className="alert alert-danger text-center animated fadeIn mb-4" role="alert">
+          <i className="bi bi-exclamation-triangle-fill me-2"></i> {error}
+        </div>
+      )}
+
+      <div className="table-responsive shadow-sm rounded-lg">
+        <table className="table table-hover table-striped align-middle">
+          <thead className="table-dark">
             <tr>
-              <th>Nombre</th>
-              <th>Apellido</th>
-              <th>Cédula</th>
-              <th>Correo</th> 
-              <th>Teléfono</th>
-              <th>Dirección</th>
-              <th className="text-center">Acciones</th>
+              <th scope="col">Nombre</th>
+              <th scope="col">Apellido</th>
+              <th scope="col">Cédula</th>
+              <th scope="col">Correo</th>
+              <th scope="col">Teléfono</th>
+              <th scope="col">Dirección</th>
+              <th scope="col" className="text-center" style={{ minWidth: '180px' }}>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {Array.isArray(clientes) && clientes.length > 0 ? (
               clientes.map((cliente) => (
-                <tr key={cliente.idCliente}> 
+                <tr key={cliente.idCliente}>
                   <td>{cliente.nombreCliente}</td>
                   <td>{cliente.apellidoCliente}</td>
                   <td>{cliente.cedulaCliente}</td>
-                  <td>{cliente.usuario ? cliente.usuario.email : 'N/A'}</td> 
+                  <td>{cliente.usuario ? cliente.usuario.email : 'N/A'}</td>
                   <td>{cliente.telefonoCliente}</td>
                   <td>{cliente.direccion}</td>
                   <td className="text-center">
-                    <button 
-                      className="btn btn-primary btn-sm me-2" 
+                    <button
+                      className="btn btn-primary btn-sm me-2 rounded-pill fw-semibold"
                       onClick={() => handleShowModal(cliente)}
-                      disabled={isSaving} // Deshabilitar mientras se guarda/elimina otro
+                      disabled={isSaving}
                     >
                       <i className="bi bi-pencil-fill me-1"></i> Editar
                     </button>
-                    <button 
-                      className="btn btn-danger btn-sm" 
-                      onClick={() => handleDeleteCliente(cliente.idCliente)}
-                      disabled={isSaving} // Deshabilitar mientras se guarda/elimina otro
+                    <button
+                      className="btn btn-danger btn-sm rounded-pill fw-semibold"
+                      onClick={() => confirmDelete(cliente.idCliente)}
+                      disabled={isSaving}
                     >
                       <i className="bi bi-trash-fill me-1"></i> Eliminar
                     </button>
@@ -244,7 +249,7 @@ export default function UsuariosCliente() {
               ))
             ) : (
               <tr>
-                <td colSpan="7" className="text-center py-4 text-muted"> 
+                <td colSpan="7" className="text-center py-4 text-muted fs-5">
                   No hay clientes registrados.
                 </td>
               </tr>
@@ -253,129 +258,156 @@ export default function UsuariosCliente() {
         </table>
       </div>
 
-      
+      {/* Modal para editar cliente */}
       {showModal && (
         <div className="modal fade show d-block" tabIndex="-1" role="dialog" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered" role="document">
-            <div className="modal-content">
-              <div className="modal-header bg-primary text-white">
-                <h5 className="modal-title">Editar Cliente</h5>
-                <button 
-                  type="button" 
-                  className="btn-close btn-close-white" 
+          <div className="modal-dialog modal-dialog-centered modal-lg" role="document"> {/* Tamaño grande */}
+            <div className="modal-content rounded-3 shadow-lg">
+              <div className="modal-header bg-primary text-white rounded-top-3">
+                <h5 className="modal-title fw-bold">
+                  <i className="bi bi-pencil-fill me-2"></i> Editar Cliente
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
                   onClick={handleCloseModal}
                   disabled={isSaving}
                 ></button>
               </div>
-              <div className="modal-body">
-                {error && <div className="alert alert-danger mb-3">{error}</div>}
+              <div className="modal-body p-4">
+                {modalError && (
+                  <div className="alert alert-danger text-center animated fadeIn mb-3" role="alert">
+                    <i className="bi bi-exclamation-triangle-fill me-2"></i> {modalError}
+                  </div>
+                )}
+                {modalSuccess && (
+                  <div className="alert alert-success text-center animated fadeIn mb-3" role="alert">
+                    <i className="bi bi-check-circle-fill me-2"></i> {modalSuccess}
+                  </div>
+                )}
                 <form onSubmit={(e) => e.preventDefault()}>
-                  <div className="mb-3">
-                    <label htmlFor="nombreCliente" className="form-label">Nombre</label>
-                    <input 
-                      type="text" 
-                      className="form-control" 
-                      id="nombreCliente"
-                      name="nombreCliente" 
-                      value={formData.nombreCliente} 
-                      onChange={handleChange} 
-                      required 
-                      disabled={isSaving}
-                    />
+                  <div className="row g-3 mb-3">
+                    <div className="col-md-6">
+                      <label htmlFor="nombreCliente" className="form-label fw-semibold">
+                        <i className="bi bi-person-fill me-2"></i>Nombre
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control form-control-lg rounded-pill"
+                        id="nombreCliente"
+                        name="nombreCliente"
+                        value={formData.nombreCliente}
+                        onChange={handleChange}
+                        required
+                        disabled={isSaving}
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label htmlFor="apellidoCliente" className="form-label fw-semibold">
+                        <i className="bi bi-person-fill me-2"></i>Apellido
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control form-control-lg rounded-pill"
+                        id="apellidoCliente"
+                        name="apellidoCliente"
+                        value={formData.apellidoCliente}
+                        onChange={handleChange}
+                        required
+                        disabled={isSaving}
+                      />
+                    </div>
                   </div>
                   <div className="mb-3">
-                    <label htmlFor="apellidoCliente" className="form-label">Apellido</label>
-                    <input 
-                      type="text" 
-                      className="form-control" 
-                      id="apellidoCliente"
-                      name="apellidoCliente" 
-                      value={formData.apellidoCliente} 
-                      onChange={handleChange} 
-                      required 
-                      disabled={isSaving}
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label htmlFor="email" className="form-label">Correo</label>
-                    <input 
-                      type="email" 
-                      className="form-control" 
+                    <label htmlFor="email" className="form-label fw-semibold">
+                      <i className="bi bi-envelope-fill me-2"></i>Correo
+                    </label>
+                    <input
+                      type="email"
+                      className="form-control form-control-lg rounded-pill"
                       id="email"
-                      name="email" 
-                      value={formData.email} 
-                      onChange={handleChange} 
-                      required 
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      required
                       disabled={isSaving}
                     />
                   </div>
                   <div className="mb-3">
-                    <label htmlFor="telefonoCliente" className="form-label">Teléfono</label>
-                    <input 
-                      type="text" 
-                      className="form-control" 
+                    <label htmlFor="telefonoCliente" className="form-label fw-semibold">
+                      <i className="bi bi-telephone-fill me-2"></i>Teléfono
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control form-control-lg rounded-pill"
                       id="telefonoCliente"
-                      name="telefonoCliente" 
-                      value={formData.telefonoCliente} 
-                      onChange={handleChange} 
-                      required 
+                      name="telefonoCliente"
+                      value={formData.telefonoCliente}
+                      onChange={handleChange}
+                      required
                       disabled={isSaving}
                     />
                   </div>
                   <div className="mb-3">
-                    <label htmlFor="password" className="form-label">Nueva Contraseña (opcional)</label>
-                    <input 
-                      type="password" 
-                      className="form-control" 
-                      id="password"
-                      name="password" 
-                      value={formData.password} 
-                      onChange={handleChange} 
-                      disabled={isSaving}
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label htmlFor="cedulaCliente" className="form-label">Cédula</label>
-                    <input 
-                      type="text" 
-                      className="form-control" 
+                    <label htmlFor="cedulaCliente" className="form-label fw-semibold">
+                      <i className="bi bi-credit-card-fill me-2"></i>Cédula
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control form-control-lg rounded-pill"
                       id="cedulaCliente"
-                      name="cedulaCliente" 
-                      value={formData.cedulaCliente} 
-                      onChange={handleChange} 
-                      required 
+                      name="cedulaCliente"
+                      value={formData.cedulaCliente}
+                      onChange={handleChange}
+                      required
                       disabled={isSaving}
                     />
                   </div>
                   <div className="mb-3">
-                    <label htmlFor="direccion" className="form-label">Dirección</label>
-                    <input 
-                      type="text" 
-                      className="form-control" 
+                    <label htmlFor="direccion" className="form-label fw-semibold">
+                      <i className="bi bi-house-door-fill me-2"></i>Dirección
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control form-control-lg rounded-pill"
                       id="direccion"
-                      name="direccion" 
-                      value={formData.direccion} 
-                      onChange={handleChange} 
-                      required 
+                      name="direccion"
+                      value={formData.direccion}
+                      onChange={handleChange}
+                      required
+                      disabled={isSaving}
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label htmlFor="password" className="form-label fw-semibold">
+                      <i className="bi bi-lock-fill me-2"></i>Nueva Contraseña (opcional)
+                    </label>
+                    <input
+                      type="password"
+                      className="form-control form-control-lg rounded-pill"
+                      id="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
                       disabled={isSaving}
                     />
                   </div>
                 </form>
               </div>
-              <div className="modal-footer">
-                <button 
-                  type="button" 
-                  className="btn btn-secondary rounded-pill fw-semibold me-2" 
+              <div className="modal-footer rounded-bottom-3">
+                <button
+                  type="button"
+                  className="btn btn-secondary rounded-pill fw-semibold me-2"
                   onClick={handleCloseModal}
                   disabled={isSaving}
                 >
                   <i className="bi bi-x-circle-fill me-2"></i> Cerrar
                 </button>
-                <button 
-                  type="button" 
-                  className="btn btn-primary rounded-pill fw-semibold" 
-                  onClick={handleSaveCliente} 
-                  disabled={isSaving} // Deshabilitar mientras se guarda
+                <button
+                  type="button"
+                  className="btn btn-primary rounded-pill fw-semibold"
+                  onClick={handleSaveCliente}
+                  disabled={isSaving}
                 >
                   <i className="bi bi-save-fill me-2"></i> {isSaving ? "Guardando..." : "Guardar"}
                 </button>
@@ -384,6 +416,46 @@ export default function UsuariosCliente() {
           </div>
         </div>
       )}
+
+      {/* ✅ Modal de Confirmación de Eliminación */}
+      {showConfirmDeleteModal && (
+        <div className="modal fade show d-block" tabIndex="-1" role="dialog" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered" role="document">
+            <div className="modal-content rounded-3 shadow-lg">
+              <div className="modal-header bg-danger text-white rounded-top-3">
+                <h5 className="modal-title fw-bold">
+                  <i className="bi bi-exclamation-triangle-fill me-2"></i> Confirmar Eliminación
+                </h5>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setShowConfirmDeleteModal(false)}></button>
+              </div>
+              <div className="modal-body p-4 text-center">
+                <p className="fs-5 mb-4">¿Estás seguro de que deseas eliminar este cliente y su usuario asociado?</p>
+                <p className="text-muted small">Esta acción es irreversible.</p>
+              </div>
+              <div className="modal-footer rounded-bottom-3 justify-content-center">
+                <button
+                  type="button"
+                  className="btn btn-secondary rounded-pill fw-semibold me-3"
+                  onClick={() => setShowConfirmDeleteModal(false)}
+                >
+                  <i className="bi bi-x-circle-fill me-2"></i> Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger rounded-pill fw-semibold"
+                  onClick={handleDeleteConfirmed}
+                >
+                  <i className="bi bi-trash-fill me-2"></i> Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <footer className="bg-dark text-light text-center p-4 mt-5 shadow-lg rounded-top-lg">
+        <p className="mb-0 small">© 2025 PC Componentes | Todos los derechos reservados</p>
+      </footer>
     </div>
   );
 }

@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log; // Para depuración
 use Illuminate\Support\Facades\Validator; // Para validación
 
-class pedidoController extends Controller
+class pedidoController extends BaseController
 {
     public function store(Request $request)
     {
@@ -212,5 +212,24 @@ class pedidoController extends Controller
                                ->get();
 
         return response()->json($items);
+    }
+    public function lista()
+    {
+         Log::info('PedidoController@indexAdmin - Solicitud para obtener todos los pedidos de administración.');
+
+        $pedidos = Pedido::with([
+            // ✅ CARGA LA RELACIÓN 'cliente' y selecciona las columnas de nombre y apellido
+            'cliente:idCliente,nombreCliente,apellidoCliente', 
+            // ✅ CARGA LA RELACIÓN 'productos' (que es PedidoProducto)
+            // Y DENTRO DE ELLA, CARGA LA RELACIÓN 'producto' (el Producto real)
+            'productos.producto:idProducto,nombreProducto,valorProducto', 
+            // ✅ CARGA LA RELACIÓN 'factura'
+            'factura' 
+        ])
+        ->orderBy('fechaPedido', 'desc') // Ordena por fecha del pedido, más reciente primero
+        ->get();
+
+        Log::info('PedidoController@indexAdmin - Pedidos obtenidos exitosamente.', ['count' => $pedidos->count()]);
+        return response()->json(['data' => $pedidos], 200);
     }
 }

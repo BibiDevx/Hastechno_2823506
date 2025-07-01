@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Producto;
 use App\Http\Controllers\BaseController; // Asegúrate de que BaseController esté disponible
 use Illuminate\Support\Facades\Validator; // Necesario para Validator
+use Illuminate\Support\Facades\Log;
 
 class productoController extends BaseController
 {
@@ -126,7 +127,7 @@ class productoController extends BaseController
             'categorias' // Si las categorías se asocian en la creación y quieres verlas
         ]);
     
-        return $this->sendResponse($producto, 'Producto creado correctamente', 201); // 201 Created
+        return $this->sendResponse($producto, 'Producto creado correctamente'); // 201 Created
     }
 
     /**
@@ -250,5 +251,20 @@ class productoController extends BaseController
         $producto->load(['categorias:categoria.idCategoria,nombreCategoria']);
 
         return $this->sendResponse($producto, 'Categorías del producto actualizadas correctamente.');
+    }       
+     public function getProductosBajoStock()
+    {
+        Log::info('ProductoController@getProductosBajoStock - Solicitud de productos con stock bajo.');
+        try {
+            $umbralStockBajo = 10; // Puedes ajustar este valor según tus necesidades
+            $productosBajoStock = Producto::with(['marca:idMarca,nombreMarca', 'proveedor:idProveedor,nombreProveedor'])
+                                            ->where('cantidadStock', '<=', $umbralStockBajo)
+                                            ->get(); // ✅ Cambiado de count() a get()
+
+            return $this->sendResponse($productosBajoStock, 'Productos con stock bajo obtenidos correctamente.');
+        } catch (\Exception $e) {
+            Log::error('Error al obtener productos con stock bajo:', ['error' => $e->getMessage()]);
+            return $this->sendError('Error al obtener productos con stock bajo.', [], 500);
+        }
     }
 }

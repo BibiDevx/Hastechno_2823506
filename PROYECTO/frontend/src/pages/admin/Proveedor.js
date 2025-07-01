@@ -1,6 +1,6 @@
 // src/components/ProveedoresAdmin.js
 import React, { useState, useEffect } from "react";
-import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap/dist/css/bootstrap.min.css";  
 import proveedorService from "../../services/proveedorService"; 
 
 export default function ProveedoresAdmin() {
@@ -19,7 +19,13 @@ export default function ProveedoresAdmin() {
   const [proveedores, setProveedores] = useState([]);
   const [loading, setLoading] = useState(true); // Estado para la carga inicial de la tabla
   const [isSaving, setIsSaving] = useState(false); // Nuevo estado para indicar si se está guardando
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(null); // Para errores globales
+  const [modalError, setModalError] = useState(null); // Para errores dentro del modal
+  const [modalSuccess, setModalSuccess] = useState(null); // Para mensajes de éxito dentro del modal
+
+  // Estados para el modal de confirmación de eliminación
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [proveedorToDeleteId, setProveedorToDeleteId] = useState(null);
 
   // Función para cargar los proveedores desde el backend
   const fetchProveedores = async () => {
@@ -47,6 +53,8 @@ export default function ProveedoresAdmin() {
   // Manejador para mostrar el modal (agregar o editar)
   const handleShowModal = (type, proveedor = null) => {
     setModalType(type);
+    setModalError(null); // Limpiar errores del modal
+    setModalSuccess(null); // Limpiar mensajes de éxito del modal
     if (proveedor) {
       setFormData({
         idProveedor: proveedor.idProveedor,
@@ -63,7 +71,6 @@ export default function ProveedoresAdmin() {
       });
     }
     setShowModal(true);
-    setError(null); // Limpia errores anteriores al abrir el modal
   };
 
   // Manejador para cerrar el modal
@@ -76,7 +83,8 @@ export default function ProveedoresAdmin() {
       emailProveedor: "", 
       telefonoProveedor: "",
     });
-    setError(null);
+    setModalError(null);
+    setModalSuccess(null);
   };
 
   // Manejador para cambios en los campos del formulario
@@ -86,22 +94,24 @@ export default function ProveedoresAdmin() {
 
   // Manejador para guardar un proveedor (crear o actualizar)
   const handleSaveProveedor = async () => {
+    setModalError(null); // Limpiar errores antes de guardar
+    setModalSuccess(null); // Limpiar mensajes de éxito antes de guardar
+
     // Validaciones de frontend
     if (
       !formData.nombreProveedor.trim() ||
       !formData.emailProveedor.trim() || 
       !formData.telefonoProveedor.trim()
     ) {
-      setError("Todos los campos obligatorios deben ser completados.");
+      setModalError("Todos los campos obligatorios deben ser completados.");
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.emailProveedor)) { 
-      setError("Por favor, ingrese un correo electrónico válido.");
+      setModalError("Por favor, ingrese un correo electrónico válido.");
       return;
     }
 
     setIsSaving(true); // Activar estado de guardado
-    setError(null); // Limpiar errores antes de intentar guardar
 
     try {
       let response;
@@ -110,10 +120,10 @@ export default function ProveedoresAdmin() {
       if (modalType === "agregar") {
         response = await proveedorService.createProveedor(dataToSend);
         setProveedores((prevProveedores) => [...prevProveedores, response]); 
-        alert("Proveedor agregado correctamente.");
+        setModalSuccess("Proveedor agregado correctamente.");
       } else {
         if (!formData.idProveedor) {
-          setError("ID de proveedor no válido para editar.");
+          setModalError("ID de proveedor no válido para editar.");
           setIsSaving(false); // Desactivar si hay un error
           return;
         }
@@ -123,105 +133,115 @@ export default function ProveedoresAdmin() {
             proveedor.idProveedor === response.idProveedor ? response : proveedor
           )
         );
-        alert("Proveedor actualizado correctamente.");
+        setModalSuccess("Proveedor actualizado correctamente.");
       }
 
-      handleCloseModal(); // Cierra el modal al guardar con éxito
+      // Opcional: Cerrar el modal al guardar con éxito después de un breve retraso
+      // setTimeout(() => handleCloseModal(), 1500); 
     } catch (err) {
       console.error("Error al guardar el proveedor:", err);
       // El getErrorMessage en el servicio ya maneja la prioridad de mensajes
-      setError(err.message || "Error desconocido al guardar el proveedor.");
+      setModalError(err.message || "Error desconocido al guardar el proveedor.");
     } finally {
       setIsSaving(false); // Desactivar estado de guardado
-      setLoading(false); // Ocultar carga (asegurarse de que se resetea)
     }
   };
 
-  // Manejador para eliminar un proveedor
-  const handleDeleteProveedor = async (id) => {
-    if (
-      window.confirm(
-        "¿Estás seguro de que deseas eliminar este proveedor? Esta acción es irreversible."
-      )
-    ) {
-      setLoading(true); // Mostrar carga mientras se elimina
-      setError(null); // Limpiar errores previos
-      try {
-        const response = await proveedorService.deleteProveedor(id); 
-        if (response.success) {
-            setProveedores((prevProveedores) => prevProveedores.filter((proveedor) => proveedor.idProveedor !== id));
-            setError(null);
-            alert("Proveedor eliminado correctamente.");
-        } else {
-            throw new Error(response.message || "Fallo al eliminar el proveedor.");
-        }
-      } catch (err) {
-        console.error("Error al eliminar el proveedor:", err);
-        setError(err.message || "Error al eliminar el proveedor.");
-      } finally {
-        setLoading(false);
+  // ✅ Manejador para mostrar el modal de confirmación de eliminación
+  const confirmDelete = (id) => {
+    setProveedorToDeleteId(id);
+    setShowDeleteConfirmModal(true);
+  };
+
+  // ✅ Manejador para la eliminación confirmada
+  const handleDeleteConfirmed = async () => {
+    setShowDeleteConfirmModal(false); // Cerrar modal de confirmación
+    if (!proveedorToDeleteId) return;
+
+    setLoading(true); // Mostrar carga mientras se elimina
+    setError(null); // Limpiar errores previos (globales)
+    try {
+      const response = await proveedorService.deleteProveedor(proveedorToDeleteId); 
+      if (response.success) {
+          setProveedores((prevProveedores) => prevProveedores.filter((proveedor) => proveedor.idProveedor !== proveedorToDeleteId));
+          // Puedes añadir un mensaje de éxito global aquí si lo deseas
+      } else {
+          throw new Error(response.message || "Fallo al eliminar el proveedor.");
       }
+    } catch (err) {
+      console.error("Error al eliminar el proveedor:", err);
+      setError(err.message || "Error al eliminar el proveedor.");
+    } finally {
+      setLoading(false);
+      setProveedorToDeleteId(null); // Limpiar ID del proveedor a eliminar
     }
   };
 
   // Renderizado condicional para el estado de carga inicial
   if (loading && !proveedores.length && !error) {
     return (
-      <div className="container mt-4 text-center">
+      <div className="container mt-5 text-center py-5">
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Cargando proveedores...</span>
         </div>
-        <p className="mt-2 text-muted">Cargando lista de proveedores...</p>
+        <p className="mt-3 text-muted fs-5">Cargando lista de proveedores...</p>
       </div>
     );
   }
 
-  // Renderizado condicional para el error global (no del modal)
-  if (error && !showModal && !loading) {
-    return <div className="container mt-4 alert alert-danger">{error}</div>;
-  }
-
   return (
-    <div className="container mt-4">
-      <h2 className="mb-4">Administrar Proveedores</h2>
+    <div className="container mt-5 mb-5 p-3">
+      <h1 className="text-center mb-5 fw-bold text-primary">
+        <i className="bi bi-truck-flatbed me-3"></i>Administrar Proveedores
+      </h1>
 
-     
-      <button 
-        className="btn btn-success mb-3" 
-        onClick={() => handleShowModal("agregar")} // Llama a handleShowModal con el tipo "agregar"
-      >
-        <i className="bi bi-plus-circle-fill me-2"></i> Agregar Proveedor
-      </button>
+      {/* Mensaje de error global (si no hay modal abierto) */}
+      {error && !showModal && (
+        <div className="alert alert-danger text-center animated fadeIn mb-4" role="alert">
+          <i className="bi bi-exclamation-triangle-fill me-2"></i> {error}
+        </div>
+      )}
 
-      <div className="table-responsive"> 
-        <table className="table table-bordered table-hover shadow-sm"> 
+      <div className="d-flex justify-content-end mb-3"> {/* Botón a la derecha */}
+        <button 
+          className="btn btn-success rounded-pill fw-semibold shadow-sm" 
+          onClick={() => handleShowModal("agregar")} // Llama a handleShowModal con el tipo "agregar"
+        >
+          <i className="bi bi-plus-circle-fill me-2"></i> Agregar Proveedor
+        </button>
+      </div>
+
+      <div className="table-responsive shadow-sm rounded-lg"> 
+        <table className="table table-hover table-striped align-middle"> 
           <thead className="table-dark"> 
             <tr>
-              <th>ID</th>
-              <th>Nombre</th>
-              <th>Correo</th>
-              <th>Teléfono</th>
-              <th className="text-center">Acciones</th>
+              <th scope="col">ID</th>
+              <th scope="col">Nombre</th>
+              <th scope="col">Correo</th>
+              <th scope="col">Teléfono</th>
+              <th scope="col" className="text-center" style={{ minWidth: '180px' }}>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {Array.isArray(proveedores) && proveedores.length > 0 ? (
               proveedores.map((proveedor) => (
                 <tr key={proveedor.idProveedor}>
-                  <td>{proveedor.idProveedor}</td>
+                  <td className="fw-bold">{proveedor.idProveedor}</td>
                   <td>{proveedor.nombreProveedor}</td>
                   <td>{proveedor.emailProveedor}</td> 
                   <td>{proveedor.telefonoProveedor}</td>
                   <td className="text-center">
                     <button
-                      className="btn btn-primary btn-sm me-2"
+                      className="btn btn-primary btn-sm me-2 rounded-pill fw-semibold"
                       onClick={() => handleShowModal("editar", proveedor)}
+                      disabled={isSaving} // Deshabilitar durante el guardado/eliminación
                     >
                       <i className="bi bi-pencil-fill me-1"></i> Editar
                     </button>
                     <button
-                      className="btn btn-danger btn-sm"
-                      onClick={() => handleDeleteProveedor(proveedor.idProveedor)}
+                      className="btn btn-danger btn-sm rounded-pill fw-semibold"
+                      onClick={() => confirmDelete(proveedor.idProveedor)} // Usa el nuevo manejador para el modal de confirmación
+                      disabled={isSaving} // Deshabilitar durante el guardado/eliminación
                     >
                       <i className="bi bi-trash-fill me-1"></i> Eliminar
                     </button>
@@ -230,7 +250,7 @@ export default function ProveedoresAdmin() {
               ))
             ) : (
               <tr>
-                <td colSpan="5" className="text-center py-4 text-muted"> 
+                <td colSpan="5" className="text-center py-4 text-muted fs-5"> 
                   No se encontraron proveedores.
                 </td>
               </tr>
@@ -239,32 +259,43 @@ export default function ProveedoresAdmin() {
         </table>
       </div>
 
-      
+      {/* Modal para agregar/editar proveedor */}
       {showModal && (
         <div className="modal fade show d-block" tabIndex="-1" role="dialog" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered" role="document">
-            <div className="modal-content">
-              <div className="modal-header bg-primary text-white">
-                <h5 className="modal-title">
-                  {modalType === "agregar" ? "Agregar Proveedor" : "Editar Proveedor"}
+          <div className="modal-dialog modal-dialog-centered modal-lg" role="document"> {/* Tamaño grande */}
+            <div className="modal-content rounded-3 shadow-lg">
+              <div className="modal-header bg-primary text-white rounded-top-3">
+                <h5 className="modal-title fw-bold">
+                  <i className={`bi ${modalType === "agregar" ? "bi-plus-circle-fill" : "bi-pencil-fill"} me-2`}></i>
+                  {modalType === "agregar" ? "Agregar Nuevo Proveedor" : "Editar Proveedor"}
                 </h5>
                 <button
                   type="button"
                   className="btn-close btn-close-white" 
                   onClick={handleCloseModal}
+                  disabled={isSaving}
                 ></button>
               </div>
-              <div className="modal-body">
-                {error && <div className="alert alert-danger mb-3">{error}</div>}
+              <div className="modal-body p-4">
+                {modalError && (
+                  <div className="alert alert-danger text-center animated fadeIn mb-3" role="alert">
+                    <i className="bi bi-exclamation-triangle-fill me-2"></i> {modalError}
+                  </div>
+                )}
+                {modalSuccess && (
+                  <div className="alert alert-success text-center animated fadeIn mb-3" role="alert">
+                    <i className="bi bi-check-circle-fill me-2"></i> {modalSuccess}
+                  </div>
+                )}
                 <form onSubmit={(e) => e.preventDefault()}>
                   <div className="mb-3">
-                    <label htmlFor="nombreProveedor" className="form-label">
-                      Nombre del Proveedor
+                    <label htmlFor="nombreProveedor" className="form-label fw-semibold">
+                      <i className="bi bi-building-fill me-2"></i>Nombre del Proveedor
                     </label>
                     <input
                       type="text"
                       id="nombreProveedor"
-                      className="form-control"
+                      className="form-control form-control-lg rounded-pill"
                       name="nombreProveedor"
                       value={formData.nombreProveedor}
                       onChange={handleChange}
@@ -273,13 +304,13 @@ export default function ProveedoresAdmin() {
                     />
                   </div>
                   <div className="mb-3">
-                    <label htmlFor="emailProveedor" className="form-label"> 
-                      Correo del Proveedor
+                    <label htmlFor="emailProveedor" className="form-label fw-semibold"> 
+                      <i className="bi bi-envelope-fill me-2"></i>Correo del Proveedor
                     </label>
                     <input
                       type="email"
                       id="emailProveedor" 
-                      className="form-control"
+                      className="form-control form-control-lg rounded-pill"
                       name="emailProveedor" 
                       value={formData.emailProveedor} 
                       onChange={handleChange}
@@ -288,13 +319,13 @@ export default function ProveedoresAdmin() {
                     />
                   </div>
                   <div className="mb-3">
-                    <label htmlFor="telefonoProveedor" className="form-label">
-                      Teléfono del Proveedor
+                    <label htmlFor="telefonoProveedor" className="form-label fw-semibold">
+                      <i className="bi bi-telephone-fill me-2"></i>Teléfono del Proveedor
                     </label>
                     <input
                       type="text"
                       id="telefonoProveedor"
-                      className="form-control"
+                      className="form-control form-control-lg rounded-pill"
                       name="telefonoProveedor"
                       value={formData.telefonoProveedor}
                       onChange={handleChange}
@@ -304,7 +335,7 @@ export default function ProveedoresAdmin() {
                   </div>
                 </form>
               </div>
-              <div className="modal-footer">
+              <div className="modal-footer rounded-bottom-3">
                 <button
                   type="button"
                   className="btn btn-secondary rounded-pill fw-semibold me-2"
@@ -326,6 +357,46 @@ export default function ProveedoresAdmin() {
           </div>
         </div>
       )}
+
+      {/* ✅ Modal de Confirmación de Eliminación (Custom Bootstrap Modal) */}
+      {showDeleteConfirmModal && (
+        <div className="modal fade show d-block" tabIndex="-1" role="dialog" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered" role="document">
+            <div className="modal-content rounded-3 shadow-lg">
+              <div className="modal-header bg-danger text-white rounded-top-3">
+                <h5 className="modal-title fw-bold">
+                  <i className="bi bi-exclamation-triangle-fill me-2"></i> Confirmar Eliminación
+                </h5>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setShowDeleteConfirmModal(false)}></button>
+              </div>
+              <div className="modal-body p-4 text-center">
+                <p className="fs-5 mb-4">¿Estás seguro de que deseas eliminar este proveedor?</p>
+                <p className="text-muted small">Esta acción es irreversible.</p>
+              </div>
+              <div className="modal-footer rounded-bottom-3 justify-content-center">
+                <button
+                  type="button"
+                  className="btn btn-secondary rounded-pill fw-semibold me-3"
+                  onClick={() => setShowDeleteConfirmModal(false)}
+                >
+                  <i className="bi bi-x-circle-fill me-2"></i> Cancelar
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-danger rounded-pill fw-semibold" 
+                  onClick={handleDeleteConfirmed}
+                >
+                  <i className="bi bi-trash-fill me-2"></i> Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <footer className="bg-dark text-light text-center p-4 mt-5 shadow-lg rounded-top-lg">
+        <p className="mb-0 small">© 2025 PC Componentes | Todos los derechos reservados</p>
+      </footer>
     </div>
   );
 }

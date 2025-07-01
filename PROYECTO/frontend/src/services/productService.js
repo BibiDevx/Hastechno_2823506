@@ -23,11 +23,9 @@ const productService = {
     try {
       const response = await axios.get(`${API_BASE_URL}/verProductos`);
       if (response.data.success && Array.isArray(response.data.data)) {
-        
         return response.data.data;
       }
       if (Array.isArray(response.data)) {
-       
         return response.data;
       }
       console.warn("Unexpected product list format from API for public access. Returning empty array.", response.data);
@@ -41,14 +39,10 @@ const productService = {
   getProductById: async (id) => {
     try {
       const response = await axios.get(`${API_BASE_URL}/verProductos/${id}`);
-      // ✅ CORRECCIÓN SUPER ROBUSTA: Prioriza 'response.data.data'
       if (response.data.success && response.data.data) {
-       
         return response.data.data; 
       }
-      // Fallback: si response.data es directamente el objeto del producto (sin wrapper de 'success')
       if (response.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
-    
         return response.data;
       }
       console.error(`Unexpected product detail format for ID ${id}. Response:`, response.data);
@@ -63,11 +57,9 @@ const productService = {
     try {
       const response = await axios.get(`${API_BASE_URL}/verProductos/home`);
       if (response.data.success && Array.isArray(response.data.data)) {
-        
         return response.data.data;
       }
       if (Array.isArray(response.data)) {
-        
         return response.data;
       }
       console.warn("Unexpected home products list format. Returning empty array.", response.data);
@@ -82,11 +74,9 @@ const productService = {
     try {
       const response = await axios.get(`${API_BASE_URL}/verProductos/marcas/${brandId}`);
       if (response.data.success && Array.isArray(response.data.data)) {
-        
         return response.data.data;
       }
       if (Array.isArray(response.data)) {
-    
         return response.data;
       }
       console.warn(`Unexpected product list by brand format for ID ${brandId}. Returning empty array.`, response.data);
@@ -108,7 +98,6 @@ const productService = {
         return response.data.data;
       }
       if (Array.isArray(response.data)) {
-       
         return response.data;
       }
       console.warn("Unexpected product details list format for admin. Returning empty array.", response.data);
@@ -127,11 +116,9 @@ const productService = {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       if (response.data.success && response.data.data) {
-        
         return response.data.data;
       }
       if (response.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
-        
         return response.data;
       }
       throw new Error("Unexpected product creation response format.");
@@ -149,11 +136,9 @@ const productService = {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       if (response.data.success && response.data.data) {
-    
         return response.data.data;
       }
       if (response.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
-     
         return response.data;
       }
       throw new Error("Unexpected product update response format.");
@@ -171,7 +156,6 @@ const productService = {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       if (response.data.success) {
-
         return response.data;
       }
       throw new Error("Unexpected product deletion response format.");
@@ -189,11 +173,9 @@ const productService = {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       if (response.data.success && Array.isArray(response.data.data)) {
-        
         return response.data.data;
       }
       if (Array.isArray(response.data)) {
-      
         return response.data;
       }
       console.warn(`Unexpected product categories response format for product ${productId}. Returning empty array.`, response.data);
@@ -212,12 +194,34 @@ const productService = {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       if (response.data.success) {
-        
         return response.data.message;
       }
       throw new Error("Unexpected product categories sync response format.");
     } catch (error) {
       console.error(`Error syncing categories for product ${productId}:`, error);
+      throw new Error(getErrorMessage(error));
+    }
+  },
+
+  // ✅ NUEVO MÉTODO: Obtener productos con stock bajo para el dashboard
+  getLowStockProducts: async () => {
+    const token = getToken();
+    if (!token) throw new Error("No token available."); 
+    try {
+      // Esta es la ruta que tu backend debería implementar para devolver productos con stock bajo
+      const response = await axios.get(`${API_BASE_URL}/productos/productos-bajo-stock`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (response.data.success && Array.isArray(response.data.data)) {
+        return response.data.data;
+      }
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
+      console.warn("Unexpected low stock products list format. Returning empty array.", response.data);
+      return [];
+    } catch (error) {
+      console.error("Error al obtener productos con stock bajo:", error);
       throw new Error(getErrorMessage(error));
     }
   },
