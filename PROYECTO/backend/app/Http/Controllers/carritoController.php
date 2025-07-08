@@ -8,13 +8,37 @@ use App\Models\Producto;
 use App\Models\Cliente;
 use Illuminate\Support\Facades\Validator;
 
-class carritoController extends BaseController // O simplemente extends Controller, según tu setup
+/**
+ * @OA\Tag(
+ *     name="Carrito",
+ *     description="Operaciones del carrito de compras para clientes e invitados"
+ * )
+ */
+class carritoController extends BaseController
 {
     /**
-     * Obtener el carrito del cliente autenticado o del invitado.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     *     path="/api/carrito",
+     *     tags={"Carrito"},
+     *     summary="Obtener carrito",
+     *     description="Obtiene el carrito del cliente autenticado o del invitado con X-Guest-ID",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="X-Guest-ID",
+     *         in="header",
+     *         required=false,
+     *         description="UUID del carrito de invitado",
+     *         @OA\Schema(type="string", format="uuid")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Carrito obtenido exitosamente"
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="No autorizado"
+     *     )
+     * )
      */
     public function index(Request $request)
     {
@@ -22,11 +46,7 @@ class carritoController extends BaseController // O simplemente extends Controll
             $q->select('idProducto', 'nombreProducto', 'valorProducto', 'definicion', 'disponibilidad');
         }]);
 
-        $cliente = null;
-        if (auth()->user()) {
-            $cliente = auth()->user()->cliente;
-        }
-        
+        $cliente = auth()->user() ? auth()->user()->cliente : null;
         $guestId = $request->header('X-Guest-ID');
 
         if ($cliente) {
@@ -42,10 +62,36 @@ class carritoController extends BaseController // O simplemente extends Controll
     }
 
     /**
-     * Agregar un producto al carrito del cliente/invitado o actualizar su cantidad.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Post(
+     *     path="/api/carrito",
+     *     tags={"Carrito"},
+     *     summary="Agregar producto al carrito",
+     *     description="Agrega o actualiza la cantidad de un producto en el carrito del cliente o invitado",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="X-Guest-ID",
+     *         in="header",
+     *         required=false,
+     *         description="UUID del carrito de invitado",
+     *         @OA\Schema(type="string", format="uuid")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"idProducto", "cantidad"},
+     *             @OA\Property(property="idProducto", type="integer"),
+     *             @OA\Property(property="cantidad", type="integer", minimum=1)
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Producto agregado/actualizado en el carrito"
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Errores de validación"
+     *     )
+     * )
      */
     public function store(Request $request)
     {
@@ -58,59 +104,65 @@ class carritoController extends BaseController // O simplemente extends Controll
             return $this->sendError('Validation Errors.', $validator->errors(), 422);
         }
 
-        $cliente = null;
-        if (auth()->user()) {
-            $cliente = auth()->user()->cliente;
-        }
+        $cliente = auth()->user() ? auth()->user()->cliente : null;
         $guestId = $request->header('X-Guest-ID');
 
         if (!$cliente && !$guestId) {
             return $this->sendError('Unauthorized: Authentication or Guest ID is required to add to cart.', [], 401);
         }
 
-        $idProducto = $request->input('idProducto');
-        $cantidad = $request->input('cantidad');
-
-        $producto = Producto::find($idProducto);
+        $producto = Producto::find($request->idProducto);
         if (!$producto || $producto->disponibilidad === 0) {
             return $this->sendError('The product is not available or does not exist.', [], 400);
         }
 
-        $itemCarritoQuery = Carrito::where('idProducto', $idProducto);
-
+        $query = Carrito::where('idProducto', $request->idProducto);
         if ($cliente) {
-            $itemCarritoQuery->where('idCliente', $cliente->idCliente);
+            $query->where('idCliente', $cliente->idCliente);
         } else {
-            $itemCarritoQuery->whereNull('idCliente')->where('guest_id', $guestId);
+            $query->whereNull('idCliente')->where('guest_id', $guestId);
         }
-        
-        $itemCarrito = $itemCarritoQuery->first();
 
-        if ($itemCarrito) {
-            $itemCarrito->cantidad += $cantidad;
-            $itemCarrito->save();
+        $item = $query->first();
+        if ($item) {
+            $item->cantidad += $request->cantidad;
+            $item->save();
         } else {
-            $itemCarrito = Carrito::create([
+            $item = Carrito::create([
                 'idCliente' => $cliente ? $cliente->idCliente : null,
-                'idProducto' => $idProducto,
-                'cantidad' => $cantidad,
+                'idProducto' => $request->idProducto,
+                'cantidad' => $request->cantidad,
                 'guest_id' => $guestId,
             ]);
         }
-        
-        $itemCarrito->load(['producto' => function($q) {
-            $q->select('idProducto', 'nombreProducto', 'valorProducto', 'definicion', 'disponibilidad');
-        }]);
 
-        return $this->sendResponse($itemCarrito, 'Product added/updated in cart successfully.');
+        $item->load('producto:idProducto,nombreProducto,valorProducto,definicion,disponibilidad');
+        return $this->sendResponse($item, 'Product added/updated in cart successfully.');
     }
 
     /**
-     * Actualizar la cantidad de un producto específico en el carrito.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $idCarrito  El ID del ítem del carrito
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Put(
+     *     path="/api/carrito/{idCarrito}",
+     *     tags={"Carrito"},
+     *     summary="Actualizar cantidad en el carrito",
+     *     description="Actualiza la cantidad de un producto específico en el carrito",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="idCarrito",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"cantidad"},
+     *             @OA\Property(property="cantidad", type="integer", minimum=0)
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Cantidad actualizada o producto eliminado"),
+     *     @OA\Response(response=404, description="Item no encontrado")
+     * )
      */
     public function update(Request $request, $idCarrito)
     {
@@ -122,101 +174,96 @@ class carritoController extends BaseController // O simplemente extends Controll
             return $this->sendError('Validation Errors.', $validator->errors(), 422);
         }
 
-        $cliente = null;
-        if (auth()->user()) {
-            $cliente = auth()->user()->cliente;
-        }
+        $cliente = auth()->user() ? auth()->user()->cliente : null;
         $guestId = $request->header('X-Guest-ID');
 
         if (!$cliente && !$guestId) {
-            return $this->sendError('Unauthorized: Authentication or Guest ID is required to update the cart.', [], 401);
+            return $this->sendError('Unauthorized.', [], 401);
         }
 
-        $itemCarritoQuery = Carrito::where('idCarrito', $idCarrito);
-
+        $query = Carrito::where('idCarrito', $idCarrito);
         if ($cliente) {
-            $itemCarritoQuery->where('idCliente', $cliente->idCliente);
+            $query->where('idCliente', $cliente->idCliente);
         } else {
-            $itemCarritoQuery->whereNull('idCliente')->where('guest_id', $guestId);
-        }
-        
-        $itemCarrito = $itemCarritoQuery->first();
-
-        if (!$itemCarrito) {
-            return $this->sendError('Cart item not found or does not belong to this client/guest.', [], 404);
+            $query->whereNull('idCliente')->where('guest_id', $guestId);
         }
 
-        $nuevaCantidad = $request->input('cantidad');
+        $item = $query->first();
+        if (!$item) {
+            return $this->sendError('Cart item not found.', [], 404);
+        }
 
-        if ($nuevaCantidad <= 0) {
-            $itemCarrito->delete();
+        if ($request->cantidad <= 0) {
+            $item->delete();
             return $this->sendResponse(['idCarrito' => $idCarrito, 'removed' => true], 'Product removed from cart successfully.');
         }
 
-        $itemCarrito->cantidad = $nuevaCantidad;
-        $itemCarrito->save();
+        $item->cantidad = $request->cantidad;
+        $item->save();
+        $item->load('producto:idProducto,nombreProducto,valorProducto,definicion,disponibilidad');
 
-        $itemCarrito->load(['producto' => function($q) {
-            $q->select('idProducto', 'nombreProducto', 'valorProducto', 'definicion', 'disponibilidad');
-        }]);
-
-        return $this->sendResponse($itemCarrito, 'Product quantity updated successfully.');
+        return $this->sendResponse($item, 'Product quantity updated successfully.');
     }
 
     /**
-     * Eliminar un producto específico del carrito.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $idCarrito  El ID del ítem del carrito a eliminar.
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Delete(
+     *     path="/api/carrito/{idCarrito}",
+     *     tags={"Carrito"},
+     *     summary="Eliminar producto del carrito",
+     *     description="Elimina un producto específico del carrito",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="idCarrito",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(response=200, description="Producto eliminado del carrito"),
+     *     @OA\Response(response=404, description="No encontrado")
+     * )
      */
     public function destroy(Request $request, $idCarrito)
     {
-        $cliente = null;
-        if (auth()->user()) {
-            $cliente = auth()->user()->cliente;
-        }
+        $cliente = auth()->user() ? auth()->user()->cliente : null;
         $guestId = $request->header('X-Guest-ID');
 
         if (!$cliente && !$guestId) {
-            return $this->sendError('Unauthorized: Authentication or Guest ID is required to remove from cart.', [], 401);
+            return $this->sendError('Unauthorized.', [], 401);
         }
 
-        $itemCarritoQuery = Carrito::where('idCarrito', $idCarrito);
-
+        $query = Carrito::where('idCarrito', $idCarrito);
         if ($cliente) {
-            $itemCarritoQuery->where('idCliente', $cliente->idCliente);
+            $query->where('idCliente', $cliente->idCliente);
         } else {
-            $itemCarritoQuery->whereNull('idCliente')->where('guest_id', $guestId);
-        }
-        
-        $itemCarrito = $itemCarritoQuery->first();
-
-        if (!$itemCarrito) {
-            return $this->sendError('Cart item not found or does not belong to this client/guest.', [], 404);
+            $query->whereNull('idCliente')->where('guest_id', $guestId);
         }
 
-        $itemCarrito->delete();
+        $item = $query->first();
+        if (!$item) {
+            return $this->sendError('Cart item not found.', [], 404);
+        }
 
+        $item->delete();
         return $this->sendResponse([], 'Product removed from cart successfully.');
     }
 
     /**
-     * Vaciar completamente el carrito del cliente autenticado o del invitado.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Post(
+     *     path="/api/carrito/clear",
+     *     tags={"Carrito"},
+     *     summary="Vaciar carrito",
+     *     description="Vacía todo el carrito del cliente o invitado",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(response=200, description="Carrito vaciado correctamente")
+     * )
      */
     public function clearCart(Request $request)
     {
-        $cliente = null;
-        if (auth()->user()) {
-            $cliente = auth()->user()->cliente;
-        }
+        $cliente = auth()->user() ? auth()->user()->cliente : null;
         $guestId = $request->header('X-Guest-ID');
 
         if (!$cliente && !$guestId) {
-            return $this->sendError('Unauthorized: Authentication or Guest ID is required to clear the cart.', [], 401);
+            return $this->sendError('Unauthorized.', [], 401);
         }
 
         $query = Carrito::query();
@@ -225,65 +272,62 @@ class carritoController extends BaseController // O simplemente extends Controll
         } else {
             $query->whereNull('idCliente')->where('guest_id', $guestId);
         }
-        
-        $query->delete();
 
+        $query->delete();
         return $this->sendResponse([], 'Cart cleared successfully.');
     }
 
     /**
-     * Fusionar el carrito de invitado con el carrito del cliente al iniciar sesión.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Post(
+     *     path="/api/carrito/merge",
+     *     tags={"Carrito"},
+     *     summary="Fusionar carrito de invitado con autenticado",
+     *     description="Fusiona el carrito de un invitado con el del usuario autenticado",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"guest_id"},
+     *             @OA\Property(property="guest_id", type="string", format="uuid")
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Carrito fusionado correctamente")
+     * )
      */
     public function mergeGuestCart(Request $request)
     {
-        // ✅ VALIDACIÓN CORREGIDA: Solo verificamos que sea requerido y un UUID válido.
-        // No verificamos 'exists' aquí, lo haremos manualmente después.
         $validator = Validator::make($request->all(), [
-            'guest_id' => 'required|uuid', 
+            'guest_id' => 'required|uuid',
         ]);
 
         if ($validator->fails()) {
-            // ✅ Retorna los errores de validación específicos si el formato es incorrecto
-            return $this->sendError('Validation Errors.', $validator->errors(), 422); 
+            return $this->sendError('Validation Errors.', $validator->errors(), 422);
         }
-        
+
         $cliente = auth()->user() ? auth()->user()->cliente : null;
         if (!$cliente) {
-            return $this->sendError('Client profile not found for the authenticated user. Cannot merge cart.', [], 404);
+            return $this->sendError('Client profile not found.', [], 404);
         }
 
         $guestId = $request->input('guest_id');
 
-        // ✅ Lógica para manejar si no hay ítems de invitado para este guest_id
-        $hasGuestItems = Carrito::whereNull('idCliente')
-                                ->where('guest_id', $guestId)
-                                ->exists();
+        $guestItems = Carrito::whereNull('idCliente')->where('guest_id', $guestId)->get();
 
-        if (!$hasGuestItems) {
-            // Si no hay ítems para este guest_id, simplemente devolvemos el carrito actual del usuario
-            $userCart = Carrito::with(['producto' => function($q) {
-                $q->select('idProducto', 'nombreProducto', 'valorProducto', 'definicion', 'disponibilidad');
-            }])
-            ->where('idCliente', $cliente->idCliente)
-            ->get();
+        if ($guestItems->isEmpty()) {
+            $userCart = Carrito::with('producto:idProducto,nombreProducto,valorProducto,definicion,disponibilidad')
+                ->where('idCliente', $cliente->idCliente)->get();
+
             return $this->sendResponse($userCart, 'No guest cart items to merge. Returning user cart.');
         }
 
-        $guestCartItems = Carrito::whereNull('idCliente')
-                                ->where('guest_id', $guestId)
-                                ->get();
+        foreach ($guestItems as $guestItem) {
+            $existing = Carrito::where('idCliente', $cliente->idCliente)
+                ->where('idProducto', $guestItem->idProducto)
+                ->first();
 
-        foreach ($guestCartItems as $guestItem) {
-            $existingUserCartItem = Carrito::where('idCliente', $cliente->idCliente)
-                                            ->where('idProducto', $guestItem->idProducto)
-                                            ->first();
-
-            if ($existingUserCartItem) {
-                $existingUserCartItem->cantidad += $guestItem->cantidad;
-                $existingUserCartItem->save();
+            if ($existing) {
+                $existing->cantidad += $guestItem->cantidad;
+                $existing->save();
                 $guestItem->delete();
             } else {
                 $guestItem->idCliente = $cliente->idCliente;
@@ -291,16 +335,11 @@ class carritoController extends BaseController // O simplemente extends Controll
                 $guestItem->save();
             }
         }
-        
-        // Limpia cualquier ítem de invitado restante con ese guest_id
+
         Carrito::whereNull('idCliente')->where('guest_id', $guestId)->delete();
 
-
-        $updatedCart = Carrito::with(['producto' => function($q) {
-            $q->select('idProducto', 'nombreProducto', 'valorProducto', 'definicion', 'disponibilidad');
-        }])
-        ->where('idCliente', $cliente->idCliente)
-        ->get();
+        $updatedCart = Carrito::with('producto:idProducto,nombreProducto,valorProducto,definicion,disponibilidad')
+            ->where('idCliente', $cliente->idCliente)->get();
 
         return $this->sendResponse($updatedCart, 'Guest cart merged successfully.');
     }
