@@ -9,23 +9,34 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-class AdminDashboardController extends BaseController // Extiende de tu BaseController
+class AdminDashboardController extends BaseController
 {
     /**
-     * Obtiene el total de ventas.
-     * Suma el valorTotal de todos los PedidoProducto.
-     * GET /api/admin/dashboard/total-ventas
-     *
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     *     path="/api/admin/dashboard/total-ventas",
+     *     summary="Obtener el total de ventas",
+     *     description="Suma el valor total de todos los productos en pedidos.",
+     *     tags={"Dashboard Admin"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Total de ventas obtenido correctamente.",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="totalVentas", type="number", format="float", example=12458.50)
+     *             ),
+     *             @OA\Property(property="message", type="string", example="Total de ventas obtenido correctamente.")
+     *         )
+     *     ),
+     *     @OA\Response(response=500, description="Error al obtener total de ventas")
+     * )
      */
     public function getTotalVentas()
     {
         Log::info('AdminDashboardController@getTotalVentas - Solicitud de total de ventas.');
         try {
-            // Suma el campo 'valorTotal' de la tabla 'pedidoproducto'
             $totalVentas = DB::table('pedidoproducto')->sum('valorTotal');
-            $totalVentas = round($totalVentas, 2); // Redondear a 2 decimales
-
+            $totalVentas = round($totalVentas, 2);
             return $this->sendResponse(['totalVentas' => $totalVentas], 'Total de ventas obtenido correctamente.');
         } catch (\Exception $e) {
             Log::error('Error al obtener total de ventas:', ['error' => $e->getMessage()]);
@@ -34,10 +45,23 @@ class AdminDashboardController extends BaseController // Extiende de tu BaseCont
     }
 
     /**
-     * Obtiene el número total de pedidos.
-     * GET /api/admin/dashboard/total-pedidos
-     *
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     *     path="/api/admin/dashboard/total-pedidos",
+     *     summary="Obtener el número total de pedidos",
+     *     tags={"Dashboard Admin"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Total de pedidos obtenido correctamente.",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="totalPedidos", type="integer", example=85)
+     *             ),
+     *             @OA\Property(property="message", type="string", example="Total de pedidos obtenido correctamente.")
+     *         )
+     *     ),
+     *     @OA\Response(response=500, description="Error al obtener total de pedidos")
+     * )
      */
     public function getTotalPedidos()
     {
@@ -52,10 +76,23 @@ class AdminDashboardController extends BaseController // Extiende de tu BaseCont
     }
 
     /**
-     * Obtiene el número total de clientes.
-     * GET /api/admin/dashboard/total-clientes
-     *
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     *     path="/api/admin/dashboard/total-clientes",
+     *     summary="Obtener el número total de clientes",
+     *     tags={"Dashboard Admin"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Total de clientes obtenido correctamente.",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="totalClientes", type="integer", example=150)
+     *             ),
+     *             @OA\Property(property="message", type="string", example="Total de clientes obtenido correctamente.")
+     *         )
+     *     ),
+     *     @OA\Response(response=500, description="Error al obtener total de clientes")
+     * )
      */
     public function getTotalClientes()
     {
@@ -70,17 +107,30 @@ class AdminDashboardController extends BaseController // Extiende de tu BaseCont
     }
 
     /**
-     * Obtiene el número de productos con stock bajo.
-     * Define un umbral para "stock bajo" (ej. 10 unidades).
-     * GET /api/admin/dashboard/productos-bajo-stock
-     *
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     *     path="/api/admin/dashboard/productos-bajo-stock",
+     *     summary="Obtener número de productos con stock bajo",
+     *     description="Devuelve el número de productos cuyo stock es menor o igual a 10 unidades.",
+     *     tags={"Dashboard Admin"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Productos con stock bajo obtenidos correctamente.",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="productosBajoStock", type="integer", example=12)
+     *             ),
+     *             @OA\Property(property="message", type="string", example="Productos con stock bajo obtenidos correctamente.")
+     *         )
+     *     ),
+     *     @OA\Response(response=500, description="Error al obtener productos con stock bajo")
+     * )
      */
     public function getProductosBajoStock()
     {
         Log::info('AdminDashboardController@getProductosBajoStock - Solicitud de productos con stock bajo.');
         try {
-            $umbralStockBajo = 10; // Puedes ajustar este valor
+            $umbralStockBajo = 10;
             $productosBajoStock = Producto::where('cantidadStock', '<=', $umbralStockBajo)->count();
             return $this->sendResponse(['productosBajoStock' => $productosBajoStock], 'Productos con stock bajo obtenidos correctamente.');
         } catch (\Exception $e) {
@@ -89,26 +139,49 @@ class AdminDashboardController extends BaseController // Extiende de tu BaseCont
         }
     }
 
-    // Opcional: Un solo endpoint para obtener todas las estadísticas a la vez (más eficiente)
-    // public function getAllDashboardStats()
-    // {
-    //     try {
-    //         $totalVentas = DB::table('pedidoproducto')->sum('valorTotal');
-    //         $totalPedidos = Pedido::count();
-    //         $totalClientes = Cliente::count();
-    //         $umbralStockBajo = 10;
-    //         $productosBajoStock = Producto::where('cantidadStock', '<=', $umbralStockBajo)->count();
+    /**
+     * @OA\Get(
+     *     path="/api/admin/dashboard/estadisticas",
+     *     summary="Obtener todas las estadísticas del dashboard",
+     *     tags={"Dashboard Admin"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Estadísticas del dashboard obtenidas correctamente.",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="totalVentas", type="number", format="float", example=12458.50),
+     *                 @OA\Property(property="totalPedidos", type="integer", example=85),
+     *                 @OA\Property(property="totalClientes", type="integer", example=150),
+     *                 @OA\Property(property="productosBajoStock", type="integer", example=12)
+     *             ),
+     *             @OA\Property(property="message", type="string", example="Estadísticas del dashboard obtenidas correctamente.")
+     *         )
+     *     ),
+     *     @OA\Response(response=500, description="Error al obtener estadísticas del dashboard")
+     * )
+     */
+    public function getAllDashboardStats()
+    {
+        Log::info('AdminDashboardController@getAllDashboardStats - Solicitud de estadísticas completas.');
+        try {
+            $totalVentas = DB::table('pedidoproducto')->sum('valorTotal');
+            $totalPedidos = Pedido::count();
+            $totalClientes = Cliente::count();
+            $umbralStockBajo = 10;
+            $productosBajoStock = Producto::where('cantidadStock', '<=', $umbralStockBajo)->count();
 
-    //         $stats = [
-    //             'totalVentas' => round($totalVentas, 2),
-    //             'totalPedidos' => $totalPedidos,
-    //             'totalClientes' => $totalClientes,
-    //             'productosBajoStock' => $productosBajoStock,
-    //         ];
-    //         return $this->sendResponse($stats, 'Estadísticas del dashboard obtenidas correctamente.');
-    //     } catch (\Exception $e) {
-    //         Log::error('Error al obtener todas las estadísticas del dashboard:', ['error' => $e->getMessage()]);
-    //         return $this->sendError('Error al obtener estadísticas del dashboard.', [], 500);
-    //     }
-    // }
+            $stats = [
+                'totalVentas' => round($totalVentas, 2),
+                'totalPedidos' => $totalPedidos,
+                'totalClientes' => $totalClientes,
+                'productosBajoStock' => $productosBajoStock,
+            ];
+
+            return $this->sendResponse($stats, 'Estadísticas del dashboard obtenidas correctamente.');
+        } catch (\Exception $e) {
+            Log::error('Error al obtener todas las estadísticas del dashboard:', ['error' => $e->getMessage()]);
+            return $this->sendError('Error al obtener estadísticas del dashboard.', [], 500);
+        }
+    }
 }
