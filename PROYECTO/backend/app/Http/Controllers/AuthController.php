@@ -5,176 +5,175 @@ namespace App\Http\Controllers;
 use App\Models\Usuario;
 use App\Models\Cliente;
 use App\Models\Admin;
-use Illuminate\Http\Request;
 use App\Http\Controllers\UsuarioController;
+use Illuminate\Http\Request;
 use App\Http\Controllers\BaseController as BaseController;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends BaseController
 {
+    //constructor usuarioController
     protected $usuarioController;
-
     public function __construct(UsuarioController $usuarioController)
     {
         $this->usuarioController = $usuarioController;
     }
-
-    /**
-     * @OA\Post(
-     *     path="/api/auth/register-cliente",
-     *     summary="Registrar nuevo cliente",
-     *     tags={"Autenticación"},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"nombreCliente","apellidoCliente","cedulaCliente","email","password","c_password","telefonoCliente","direccion"},
-     *             @OA\Property(property="nombreCliente", type="string", example="Juan"),
-     *             @OA\Property(property="apellidoCliente", type="string", example="Pérez"),
-     *             @OA\Property(property="cedulaCliente", type="string", example="1234567890"),
-     *             @OA\Property(property="email", type="string", format="email", example="juan@example.com"),
-     *             @OA\Property(property="password", type="string", example="123456"),
-     *             @OA\Property(property="c_password", type="string", example="123456"),
-     *             @OA\Property(property="telefonoCliente", type="string", example="3101234567"),
-     *             @OA\Property(property="direccion", type="string", example="Calle 123 #45-67")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=201,
-     *         description="Cliente registrado exitosamente"
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Datos inválidos"
-     *     )
-     * )
-     */
+    //registro Cliente
     public function registerCliente(Request $request)
     {
-        // ...
-    }
+        // Validación de datos
+        $validator = Validator::make($request->all(), [
+            'nombreCliente' => 'required|string|max:255',
+            'apellidoCliente' => 'required|string|max:255',
+            'cedulaCliente' => 'required|numeric|unique:cliente,cedulaCliente',
+            'email' => 'required|string|email|max:255|unique:usuario,email',
+            'password' => 'required|string|min:6',
+            'c_password' => 'required|string|min:6|same:password',
+            'telefonoCliente' => 'required|numeric|digits:10',
+            'direccion' => 'required|string|max:255',
+        ]);
 
-    /**
-     * @OA\Post(
-     *     path="/api/auth/register-admin",
-     *     summary="Registrar nuevo administrador",
-     *     tags={"Autenticación"},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"nombreAdmin","apellidoAdmin","cedulaAdmin","email","password","c_password","telefonoAdmin"},
-     *             @OA\Property(property="nombreAdmin", type="string", example="Ana"),
-     *             @OA\Property(property="apellidoAdmin", type="string", example="Gómez"),
-     *             @OA\Property(property="cedulaAdmin", type="string", example="9876543210"),
-     *             @OA\Property(property="email", type="string", format="email", example="ana@example.com"),
-     *             @OA\Property(property="password", type="string", example="admin123"),
-     *             @OA\Property(property="c_password", type="string", example="admin123"),
-     *             @OA\Property(property="telefonoAdmin", type="string", example="3127654321")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=201,
-     *         description="Admin registrado exitosamente"
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Datos inválidos"
-     *     )
-     * )
-     */
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 400);
+        }
+
+        // 🔹 Llamar a UsuarioController para crear o recuperar usuario
+        $usuario = $this->usuarioController->crearObtenerUsuario('Cliente', $request->email, $request->password);
+
+
+        if (!$usuario) {
+            return response()->json(['error' => 'No se pudo crear el usuario'], 500);
+        }
+
+        // 🔹 Registrar Cliente con el usuario creado
+        $cliente = Cliente::create([
+            'idUsuario' => $usuario->idUsuario,
+            'nombreCliente' => $request->nombreCliente,
+            'apellidoCliente' => $request->apellidoCliente,
+            'cedulaCliente' => $request->cedulaCliente,
+            'telefonoCliente' => $request->telefonoCliente,
+            'direccion' => $request->direccion,
+        ]);
+        // $cliente = Cliente::create($input);
+        return response()->json(['message' => 'Cliente registrado exitosamente', 'cliente' => $cliente], 201);
+    }
+    //registro  Admin
     public function registerAdmin(Request $request)
     {
-        // ...
-    }
+        // Validación de datos
+        $validator = Validator::make($request->all(), [
+            'nombreAdmin' => 'required|string|max:255',
+            'apellidoAdmin' => 'required|string|max:255',
+            'cedulaAdmin' => 'required|numeric|unique:admin,cedulaAdmin',
+            'email' => 'required|string|email|max:255|unique:usuario,email',
+            'password' => 'required|string|min:6',
+            'c_password' => 'required|string|min:6|same:password',
+            'telefonoAdmin' => 'required|numeric|digits:10'
+        ]);
 
-    /**
-     * @OA\Post(
-     *     path="/api/auth/login",
-     *     summary="Iniciar sesión",
-     *     tags={"Autenticación"},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"email","password"},
-     *             @OA\Property(property="email", type="string", format="email", example="usuario@example.com"),
-     *             @OA\Property(property="password", type="string", example="123456")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Usuario autenticado correctamente"
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Credenciales incorrectas"
-     *     )
-     * )
-     */
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 400);
+        }
+
+        // 🔹 Llamar a UsuarioController para crear o recuperar usuario
+        $usuario = $this->usuarioController->crearObtenerUsuario('Admin', $request->email, $request->password);
+
+        if (!$usuario) {
+            return response()->json(['error' => 'No se pudo crear el usuario'], 500);
+        }
+
+        // 🔹 Registrar admin con el usuario creado
+        $admin = Admin::create([
+            'idUsuario' => $usuario->idUsuario,
+            'nombreAdmin' => $request->nombreAdmin,
+            'apellidoAdmin' => $request->apellidoAdmin,
+            'cedulaAdmin' => $request->cedulaAdmin,
+            'telefonoAdmin' => $request->telefonoAdmin
+        ]);
+        // $cliente = Cliente::create($input);
+        return response()->json(['message' => 'Admin registrado exitosamente', 'admin' => $admin], 201);
+    }
+    // 🔹 Login
     public function login(Request $request)
     {
-        // ...
+        $credentials = $request->only('email', 'password');
+
+        $user = Usuario::where('email', $request->email)->first();
+        if (!$user) {
+            return $this->sendError('Unauthorized', ['error' => 'Usuario no encontrado'], 401);
+        }
+
+        if (!$token = auth('api')->attempt($credentials)) {
+            return $this->sendError('Unauthorized', ['error' => 'Credenciales incorrectas'], 401);
+        }
+
+        // Obtener el rol del usuario
+        $rol = $user->rol ? $user->rol->nombreRol : 'Sin rol';
+
+        return $this->sendResponse([
+            'access_token' => $token,
+            'token_type' => 'bearer',
+            'expires_in' => JWTAuth::factory()->getTTL() * 60,
+            'user' => [
+                'id' => $user->idUsuario,
+                'nombre' => $user->cliente->nombreCliente ?? $user->admin->nombreAdmin ?? 'Usuario',
+                'email' => $user->email,
+                'rol' => $rol,
+            ]
+        ], 'Usuario autenticado correctamente.');
     }
 
-    /**
-     * @OA\Get(
-     *     path="/api/auth/profile",
-     *     summary="Obtener perfil del usuario autenticado",
-     *     tags={"Autenticación"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="Datos del usuario autenticado"
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Token inválido o no enviado"
-     *     )
-     * )
-     */
+    // 🔹 Perfil
     public function profile()
-    {
-        // ...
-    }
+{
+    try {
+        // Autenticar usuario
+        $user = JWTAuth::parseToken()->authenticate();
 
-    /**
-     * @OA\Post(
-     *     path="/api/auth/logout",
-     *     summary="Cerrar sesión",
-     *     tags={"Autenticación"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="Sesión cerrada correctamente"
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Token inválido"
-     *     )
-     * )
-     */
-    public function logout()
-    {
-        // ...
-    }
+        // Cargar relaciones (rol, cliente, admin)
+        $user->load(['rol', 'cliente', 'admin']);
 
-    /**
-     * @OA\Post(
-     *     path="/api/auth/refresh",
-     *     summary="Refrescar token JWT",
-     *     tags={"Autenticación"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="Token refrescado exitosamente"
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Token inválido o no enviado"
-     *     )
-     * )
-     */
-    public function refresh()
-    {
-        // ...
+        return response()->json([
+            'success' => true,
+            'data' => $user,
+        ], 200);
+
+    } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
+        return response()->json(['error' => 'No autorizado'], 401);
     }
 }
+
+
+
+    // 🔹 Logout
+    public function logout()
+    {
+        try {
+            JWTAuth::invalidate(JWTAuth::getToken());
+            return $this->sendResponse([], 'User logout successfully');
+        } catch (\Exception $e) {
+            return $this->sendError('Unauthorized', ['error' => 'No se pudo cerrar sesión, token inválido'], 401);
+        }
+    }
+
+    // 🔹 Refresh Token
+    public function refresh()
+    {
+        try {
+            $token = JWTAuth::refresh(JWTAuth::getToken());
+            return $this->sendResponse($this->respondWithToken($token), 'Token refreshed successfully');
+        } catch (\Exception $e) {
+            return $this->sendError('Unauthorized', ['error' => 'No se pudo refrescar el token'], 401);
+        }
+    }
+
+    protected function respondWithToken($token)
+    {
+        return [
+            'access_token' => $token,
+            'token_type' => 'bearer',
+            'expires_in' => JWTAuth::factory()->getTTL() * 60,
+        ];
+    }
+} 
