@@ -3,13 +3,65 @@
 namespace App\Http\Controllers;
 
 use App\Models\Admin;
+use App\Models\User; // Asegúrate de que este 'use' exista si tu modelo de Usuario se llama 'User'
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 
+/**
+ * @OA\Tag(
+ * name="Administradores",
+ * description="Operaciones relacionadas con la gestión de administradores."
+ * )
+ *
+ *
+ * @OA\Schema(
+ * schema="UserBasic",
+ * title="Usuario Básico",
+ * description="Información básica del usuario asociado al administrador.",
+ * @OA\Property(
+ * property="idUsuario",
+ * type="integer",
+ * format="int64",
+ * description="ID único del usuario."
+ * ),
+ * @OA\Property(
+ * property="email",
+ * type="string",
+ * format="email",
+ * description="Correo electrónico del usuario."
+ * )
+ * )
+ */
 class adminController extends BaseController
 {
-    // 🔹 Obtener todos los admins
+    /**
+     * @OA\Get(
+     * path="/api/users/show",
+     * summary="Obtener todos los administradores",
+     * tags={"Administradores"},
+     * security={{"bearerAuth": {}}},
+     * @OA\Response(
+     * response=200,
+     * description="Lista de administradores obtenida exitosamente.",
+     * @OA\JsonContent(
+     * type="object",
+     * @OA\Property(property="success", type="boolean", example=true),
+     * @OA\Property(property="message", type="string", example="Lista de admins obtenida exitosamente."),
+     * @OA\Property(
+     * property="data",
+     * type="array",
+     * @OA\Items(ref="#/components/schemas/Admin")
+     * )
+     * )
+     * ),
+     * @OA\Response(
+     * response=401,
+     * description="No autenticado.",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     * )
+     * )
+     */
     public function index()
     {
         // Carga ansiosa (eager loading) de la relación 'usuario',
@@ -18,7 +70,41 @@ class adminController extends BaseController
         return $this->sendResponse($admins, 'Lista de admins obtenida exitosamente.');
     }
 
-    // 🔹 Obtener un admin por ID
+    /**
+     * @OA\Get(
+     * path="/api/users/ver/admin/{id}",
+     * summary="Obtener un administrador por ID",
+     * tags={"Administradores"},
+     * security={{"bearerAuth": {}}},
+     * @OA\Parameter(
+     * name="id",
+     * in="path",
+     * required=true,
+     * description="ID del administrador a obtener.",
+     * @OA\Schema(type="integer", format="int64")
+     * ),
+     * @OA\Response(
+     * response=200,
+     * description="Administrador encontrado.",
+     * @OA\JsonContent(
+     * type="object",
+     * @OA\Property(property="success", type="boolean", example=true),
+     * @OA\Property(property="message", type="string", example="Admin encontrado."),
+     * @OA\Property(property="data", ref="#/components/schemas/Admin")
+     * )
+     * ),
+     * @OA\Response(
+     * response=404,
+     * description="Admin no encontrado.",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     * ),
+     * @OA\Response(
+     * response=401,
+     * description="No autenticado.",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     * )
+     * )
+     */
     public function show($id)
     {
         // Carga ansiosa de la relación 'usuario' también para una búsqueda individual.
@@ -29,7 +115,52 @@ class adminController extends BaseController
         return $this->sendResponse($admin, 'Admin encontrado.');
     }
 
-    // 🔹 Actualizar parcialmente un admin (para el propio admin autenticado)
+    /**
+     * @OA\Patch(
+     * path="/api/admin/actualizar/datos",
+     * summary="Actualizar el perfil del administrador autenticado",
+     * tags={"Administradores", "Perfil"},
+     * security={{"bearerAuth": {}}},
+     * @OA\RequestBody(
+     * required=true,
+     * description="Datos para actualizar el perfil del administrador. Los campos son opcionales (sometimes).",
+     * @OA\JsonContent(
+     * @OA\Property(property="nombreAdmin", type="string", maxLength=255, description="Nuevo nombre del administrador."),
+     * @OA\Property(property="apellidoAdmin", type="string", maxLength=255, description="Nuevo apellido del administrador."),
+     * @OA\Property(property="cedulaAdmin", type="string", description="Nueva cédula del administrador (debe ser única)."),
+     * @OA\Property(property="telefonoAdmin", type="string", description="Nuevo teléfono del administrador."),
+     * @OA\Property(property="email", type="string", format="email", maxLength=255, description="Nuevo correo electrónico del usuario (debe ser único)."),
+     * @OA\Property(property="password", type="string", minLength=6, description="Nueva contraseña (mínimo 6 caracteres)."),
+     * @OA\Property(property="idRol", type="integer", format="int64", description="ID del nuevo rol (solo si el usuario autenticado es SuperAdmin).")
+     * )
+     * ),
+     * @OA\Response(
+     * response=200,
+     * description="Administrador actualizado correctamente.",
+     * @OA\JsonContent(
+     * type="object",
+     * @OA\Property(property="success", type="boolean", example=true),
+     * @OA\Property(property="message", type="string", example="Administrador actualizado correctamente."),
+     * @OA\Property(property="data", ref="#/components/schemas/Admin")
+     * )
+     * ),
+     * @OA\Response(
+     * response=404,
+     * description="Admin no encontrado.",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     * ),
+     * @OA\Response(
+     * response=422,
+     * description="Errores de validación.",
+     * @OA\JsonContent(ref="#/components/schemas/ValidationError")
+     * ),
+     * @OA\Response(
+     * response=401,
+     * description="No autenticado.",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     * )
+     * )
+     */
     public function updatePartial(Request $request)
     {
         $usuario = auth()->user(); // Usuario autenticado
@@ -87,7 +218,51 @@ class adminController extends BaseController
         return $this->sendResponse($admin, 'Administrador actualizado correctamente.');
     }
 
-    // 🔹 Eliminar un admin
+    /**
+     * @OA\Delete(
+     * path="/api/users/delete/admin/{id}",
+     * summary="Eliminar un administrador (solo SuperAdmin)",
+     * tags={"Administradores"},
+     * security={{"bearerAuth": {}}},
+     * @OA\Parameter(
+     * name="id",
+     * in="path",
+     * required=true,
+     * description="ID del administrador a eliminar.",
+     * @OA\Schema(type="integer", format="int64")
+     * ),
+     * @OA\Response(
+     * response=200,
+     * description="Administrador y su usuario fueron eliminados correctamente.",
+     * @OA\JsonContent(
+     * type="object",
+     * @OA\Property(property="success", type="boolean", example=true),
+     * @OA\Property(property="message", type="string", example="Administrador y su usuario fueron eliminados correctamente."),
+     * @OA\Property(
+     * property="data",
+     * type="array",
+     * @OA\Items(type="object"),
+     * example={}
+     * )
+     * )
+     * ),
+     * @OA\Response(
+     * response=403,
+     * description="No autorizado. Solo SuperAdmin puede eliminar administradores.",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     * ),
+     * @OA\Response(
+     * response=404,
+     * description="Administrador no encontrado.",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     * ),
+     * @OA\Response(
+     * response=401,
+     * description="No autenticado.",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     * )
+     * )
+     */
     public function destroy($id)
     {
         $usuario = auth()->user();
@@ -112,7 +287,59 @@ class adminController extends BaseController
         return $this->sendResponse([], 'Administrador y su usuario fueron eliminados correctamente.');
     }
 
-    // 🔹 Actualizar administradores por SuperAdmin (ruta /users/actualizar/admin/{id})
+    /**
+     * @OA\Patch(
+     * path="/api/users/actualizar/admin/{id}",
+     * summary="Actualizar un administrador por ID (solo SuperAdmin)",
+     * tags={"Administradores"},
+     * security={{"bearerAuth": {}}},
+     * @OA\Parameter(
+     * name="id",
+     * in="path",
+     * required=true,
+     * description="ID del administrador a actualizar.",
+     * @OA\Schema(type="integer", format="int64")
+     * ),
+     * @OA\RequestBody(
+     * required=true,
+     * description="Datos para actualizar el administrador. Los campos son opcionales (sometimes).",
+     * @OA\JsonContent(
+     * @OA\Property(property="nombreAdmin", type="string", maxLength=255, description="Nuevo nombre del administrador."),
+     * @OA\Property(property="apellidoAdmin", type="string", maxLength=255, description="Nuevo apellido del administrador."),
+     * @OA\Property(property="cedulaAdmin", type="string", description="Nueva cédula del administrador (debe ser única)."),
+     * @OA\Property(property="telefonoAdmin", type="string", description="Nuevo teléfono del administrador."),
+     * @OA\Property(property="email", type="string", format="email", maxLength=255, description="Nuevo correo electrónico del usuario (debe ser único)."),
+     * @OA\Property(property="password", type="string", minLength=6, description="Nueva contraseña (mínimo 6 caracteres)."),
+     * @OA\Property(property="idRol", type="integer", format="int64", description="ID del nuevo rol (solo si el usuario autenticado es SuperAdmin).")
+     * )
+     * ),
+     * @OA\Response(
+     * response=200,
+     * description="Admin actualizado correctamente.",
+     * @OA\JsonContent(
+     * type="object",
+     * @OA\Property(property="success", type="boolean", example=true),
+     * @OA\Property(property="message", type="string", example="Admin actualizado correctamente."),
+     * @OA\Property(property="data", ref="#/components/schemas/Admin")
+     * )
+     * ),
+     * @OA\Response(
+     * response=404,
+     * description="Admin no encontrado.",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     * ),
+     * @OA\Response(
+     * response=422,
+     * description="Errores de validación.",
+     * @OA\JsonContent(ref="#/components/schemas/ValidationError")
+     * ),
+     * @OA\Response(
+     * response=401,
+     * description="No autenticado.",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     * )
+     * )
+     */
     public function actualizarAdmins(Request $request, $id)
     {
         $admin = Admin::find($id);

@@ -95,6 +95,7 @@ Route::middleware(['auth:api', 'role:SuperAdmin'])->prefix('control')->group(fun
     Route::get('/roles', [rolController::class, 'index']);
     Route::get('/roles/{id}', [rolController::class, 'show'])->where('id', '[0-9]+');
     Route::patch('/roles/actualizar/{id}', [rolController::class, 'updatePartial'])->where('id', '[0-9]+'); // Actualización parcial
+    Route::put('/roles/update/{id}', [rolController::class, 'updatePartial'])->where('id', '[0-9]+'); 
     Route::delete('/roles/eliminar/{id}', [rolController::class, 'destroy'])->where('id', '[0-9]+');
 });
 Route::middleware(['auth:api', 'role:SuperAdmin'])->group(function () {

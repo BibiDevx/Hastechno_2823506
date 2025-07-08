@@ -9,14 +9,45 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * @OA\Tag(
+ * name="Dashboard de Administración",
+ * description="Endpoints para obtener estadísticas y métricas del dashboard de administración."
+ * )
+ */
 class AdminDashboardController extends BaseController // Extiende de tu BaseController
 {
     /**
-     * Obtiene el total de ventas.
-     * Suma el valorTotal de todos los PedidoProducto.
-     * GET /api/admin/dashboard/total-ventas
-     *
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     * path="/api/admin/dashboard/total-ventas",
+     * summary="Obtiene el total de ventas del sistema.",
+     * tags={"Dashboard de Administración"},
+     * security={{"bearerAuth": {}}},
+     * @OA\Response(
+     * response=200,
+     * description="Total de ventas obtenido correctamente.",
+     * @OA\JsonContent(
+     * type="object",
+     * @OA\Property(property="success", type="boolean", example=true),
+     * @OA\Property(property="message", type="string", example="Total de ventas obtenido correctamente."),
+     * @OA\Property(
+     * property="data",
+     * type="object",
+     * @OA\Property(property="totalVentas", type="number", format="float", example=12345.67, description="Suma total de todas las ventas.")
+     * )
+     * )
+     * ),
+     * @OA\Response(
+     * response=500,
+     * description="Error interno del servidor al obtener el total de ventas.",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     * ),
+     * @OA\Response(
+     * response=401,
+     * description="No autenticado.",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     * )
+     * )
      */
     public function getTotalVentas()
     {
@@ -34,10 +65,36 @@ class AdminDashboardController extends BaseController // Extiende de tu BaseCont
     }
 
     /**
-     * Obtiene el número total de pedidos.
-     * GET /api/admin/dashboard/total-pedidos
-     *
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     * path="/api/admin/dashboard/total-pedidos",
+     * summary="Obtiene el número total de pedidos.",
+     * tags={"Dashboard de Administración"},
+     * security={{"bearerAuth": {}}},
+     * @OA\Response(
+     * response=200,
+     * description="Total de pedidos obtenido correctamente.",
+     * @OA\JsonContent(
+     * type="object",
+     * @OA\Property(property="success", type="boolean", example=true),
+     * @OA\Property(property="message", type="string", example="Total de pedidos obtenido correctamente."),
+     * @OA\Property(
+     * property="data",
+     * type="object",
+     * @OA\Property(property="totalPedidos", type="integer", example=500, description="Número total de pedidos en el sistema.")
+     * )
+     * )
+     * ),
+     * @OA\Response(
+     * response=500,
+     * description="Error interno del servidor al obtener el total de pedidos.",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     * ),
+     * @OA\Response(
+     * response=401,
+     * description="No autenticado.",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     * )
+     * )
      */
     public function getTotalPedidos()
     {
@@ -52,10 +109,36 @@ class AdminDashboardController extends BaseController // Extiende de tu BaseCont
     }
 
     /**
-     * Obtiene el número total de clientes.
-     * GET /api/admin/dashboard/total-clientes
-     *
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     * path="/api/admin/dashboard/total-clientes",
+     * summary="Obtiene el número total de clientes.",
+     * tags={"Dashboard de Administración"},
+     * security={{"bearerAuth": {}}},
+     * @OA\Response(
+     * response=200,
+     * description="Total de clientes obtenido correctamente.",
+     * @OA\JsonContent(
+     * type="object",
+     * @OA\Property(property="success", type="boolean", example=true),
+     * @OA\Property(property="message", type="string", example="Total de clientes obtenido correctamente."),
+     * @OA\Property(
+     * property="data",
+     * type="object",
+     * @OA\Property(property="totalClientes", type="integer", example=150, description="Número total de clientes registrados.")
+     * )
+     * )
+     * ),
+     * @OA\Response(
+     * response=500,
+     * description="Error interno del servidor al obtener el total de clientes.",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     * ),
+     * @OA\Response(
+     * response=401,
+     * description="No autenticado.",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     * )
+     * )
      */
     public function getTotalClientes()
     {
@@ -70,11 +153,36 @@ class AdminDashboardController extends BaseController // Extiende de tu BaseCont
     }
 
     /**
-     * Obtiene el número de productos con stock bajo.
-     * Define un umbral para "stock bajo" (ej. 10 unidades).
-     * GET /api/admin/dashboard/productos-bajo-stock
-     *
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Get(
+     * path="/api/admin/dashboard/productos-bajo-stock",
+     * summary="Obtiene el número de productos con stock bajo.",
+     * tags={"Dashboard de Administración"},
+     * security={{"bearerAuth": {}}},
+     * @OA\Response(
+     * response=200,
+     * description="Productos con stock bajo obtenidos correctamente.",
+     * @OA\JsonContent(
+     * type="object",
+     * @OA\Property(property="success", type="boolean", example=true),
+     * @OA\Property(property="message", type="string", example="Productos con stock bajo obtenidos correctamente."),
+     * @OA\Property(
+     * property="data",
+     * type="object",
+     * @OA\Property(property="productosBajoStock", type="integer", example=5, description="Número de productos cuyo stock está por debajo o igual al umbral definido.")
+     * )
+     * )
+     * ),
+     * @OA\Response(
+     * response=500,
+     * description="Error interno del servidor al obtener productos con stock bajo.",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     * ),
+     * @OA\Response(
+     * response=401,
+     * description="No autenticado.",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     * )
+     * )
      */
     public function getProductosBajoStock()
     {
@@ -90,6 +198,41 @@ class AdminDashboardController extends BaseController // Extiende de tu BaseCont
     }
 
     // Opcional: Un solo endpoint para obtener todas las estadísticas a la vez (más eficiente)
+    // /**
+    //  * @OA\Get(
+    //  * path="/api/admin/dashboard/stats",
+    //  * summary="Obtiene todas las estadísticas del dashboard de administración en una sola solicitud.",
+    //  * tags={"Dashboard de Administración"},
+    //  * security={{"bearerAuth": {}}},
+    //  * @OA\Response(
+    //  * response=200,
+    //  * description="Estadísticas del dashboard obtenidas correctamente.",
+    //  * @OA\JsonContent(
+    //  * type="object",
+    //  * @OA\Property(property="success", type="boolean", example=true),
+    //  * @OA\Property(property="message", type="string", example="Estadísticas del dashboard obtenidas correctamente."),
+    //  * @OA\Property(
+    //  * property="data",
+    //  * type="object",
+    //  * @OA\Property(property="totalVentas", type="number", format="float", example=12345.67, description="Suma total de todas las ventas."),
+    //  * @OA\Property(property="totalPedidos", type="integer", example=500, description="Número total de pedidos en el sistema."),
+    //  * @OA\Property(property="totalClientes", type="integer", example=150, description="Número total de clientes registrados."),
+    //  * @OA\Property(property="productosBajoStock", type="integer", example=5, description="Número de productos cuyo stock está por debajo o igual al umbral definido.")
+    //  * )
+    //  * )
+    //  * ),
+    //  * @OA\Response(
+    //  * response=500,
+    //  * description="Error interno del servidor al obtener estadísticas del dashboard.",
+    //  * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+    //  * ),
+    //  * @OA\Response(
+    //  * response=401,
+    //  * description="No autenticado.",
+    //  * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+    //  * )
+    //  * )
+    //  */
     // public function getAllDashboardStats()
     // {
     //     try {

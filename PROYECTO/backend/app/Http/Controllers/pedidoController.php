@@ -14,8 +14,127 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log; // Para depuración
 use Illuminate\Support\Facades\Validator; // Para validación
 
+/**
+ * @OA\Tag(
+ * name="Pedidos",
+ * description="Operaciones relacionadas con la gestión de pedidos de clientes."
+ * )
+ *
+ * @OA\Schema(
+ * schema="PedidoProductoInput",
+ * title="Producto para Pedido",
+ * description="Detalles de un producto a incluir en un nuevo pedido.",
+ * required={"idProducto", "cantidad"},
+ * @OA\Property(property="idProducto", type="integer", format="int64", description="ID del producto.", example=1),
+ * @OA\Property(property="cantidad", type="integer", description="Cantidad del producto.", example=2)
+ * )
+ *
+ * @OA\Schema(
+ * schema="PedidoInput",
+ * title="Entrada de Pedido",
+ * description="Datos necesarios para crear un nuevo pedido.",
+ * required={"productos", "metodo_pago"},
+ * @OA\Property(
+ * property="productos",
+ * type="array",
+ * @OA\Items(ref="#/components/schemas/PedidoProductoInput"),
+ * description="Lista de productos a incluir en el pedido."
+ * ),
+ * @OA\Property(property="metodo_pago", type="string", maxLength=50, description="Método de pago para el pedido.", example="Tarjeta de Crédito")
+ * )
+ *
+ * @OA\Schema(
+ * schema="PedidoResponseDetailed",
+ * title="Pedido Detallado",
+ * description="Representación completa de un pedido con sus productos y factura.",
+ * allOf={
+ * @OA\Schema(ref="#/components/schemas/Pedido"),
+ * @OA\Schema(
+ * @OA\Property(
+ * property="productos",
+ * type="array",
+ * @OA\Items(
+ * type="object",
+ * allOf={
+ * @OA\Schema(ref="#/components/schemas/PedidoProducto"),
+ * @OA\Schema(
+ * @OA\Property(property="producto", ref="#/components/schemas/Producto", description="Detalles del producto asociado.")
+ * )
+ * }
+ * ),
+ * description="Lista de ítems de productos en el pedido, con detalles del producto."
+ * ),
+ * @OA\Property(property="factura", ref="#/components/schemas/Factura", description="Detalles de la factura asociada al pedido.")
+ * )
+ * }
+ * )
+ *
+ * @OA\Schema(
+ * schema="PedidoProductoWithProduct",
+ * title="Pedido Producto con Detalles de Producto",
+ * description="Representa un ítem de producto dentro de un pedido, incluyendo los detalles completos del producto.",
+ * allOf={
+ * @OA\Schema(ref="#/components/schemas/PedidoProducto"),
+ * @OA\Schema(
+ * @OA\Property(property="producto", ref="#/components/schemas/Producto", description="Detalles del producto asociado al ítem del pedido.")
+ * )
+ * }
+ * )
+ */
 class pedidoController extends BaseController
 {
+    /**
+     * @OA\Post(
+     * path="/api/p/pedidos",
+     * summary="Realizar un nuevo pedido",
+     * tags={"Pedidos"},
+     * security={{"bearerAuth": {}}},
+     * @OA\RequestBody(
+     * required=true,
+     * description="Datos para crear un nuevo pedido.",
+     * @OA\JsonContent(ref="#/components/schemas/PedidoInput")
+     * ),
+     * @OA\Response(
+     * response=201,
+     * description="Pedido realizado y factura generada exitosamente.",
+     * @OA\JsonContent(
+     * type="object",
+     * @OA\Property(property="message", type="string", example="Pedido realizado y factura generada exitosamente."),
+     * @OA\Property(property="pedido", ref="#/components/schemas/PedidoResponseDetailed")
+     * )
+     * ),
+     * @OA\Response(
+     * response=400,
+     * description="Errores en la solicitud (producto no encontrado, stock insuficiente, cliente no asociado).",
+     * @OA\JsonContent(
+     * type="object",
+     * @OA\Property(property="message", type="string", example="Stock insuficiente para: Producto X"),
+     * @OA\Property(property="errors", type="object", nullable=true, description="Detalles de errores de validación si aplica.")
+     * )
+     * ),
+     * @OA\Response(
+     * response=401,
+     * description="No autenticado.",
+     * @OA\JsonContent(
+     * type="object",
+     * @OA\Property(property="message", type="string", example="Debes iniciar sesión para realizar un pedido.")
+     * )
+     * ),
+     * @OA\Response(
+     * response=422,
+     * description="Errores de validación de los datos de entrada.",
+     * @OA\JsonContent(ref="#/components/schemas/ValidationError")
+     * ),
+     * @OA\Response(
+     * response=500,
+     * description="Error interno del servidor al procesar el pedido.",
+     * @OA\JsonContent(
+     * type="object",
+     * @OA\Property(property="message", type="string", example="Error al procesar el pedido: Mensaje de error interno.")
+     * )
+     * )
+     * )
+     */
     public function store(Request $request)
     {
         Log::info('pedidoController@store - Solicitud de pedido recibida', ['request_data' => $request->all()]);
@@ -122,7 +241,7 @@ class pedidoController extends BaseController
                 'idPedido' => $pedido->idPedido,
                 'fechaFactura' => now(), 
                 'metodoPago' => $request->input('metodo_pago'), // ✅ GUARDA EL MÉTODO DE PAGO
-                // 'totalFactura' => $totalPedidoCalculado,       // ❌ ELIMINADO: Ya no se guarda el total de factura aquí
+                // 'totalFactura' => $totalPedidoCalculado,      // ❌ ELIMINADO: Ya no se guarda el total de factura aquí
                 // Aquí podrías generar 'numeroFactura' si es autogenerado por el backend
                 // 'numeroFactura' => 'FAC-' . str_pad($pedido->idPedido, 5, '0', STR_PAD_LEFT) . '-' . now()->format('Ymd'), 
             ]);
@@ -156,6 +275,30 @@ class pedidoController extends BaseController
         }
     }
 
+    /**
+     * @OA\Get(
+     * path="/api/p/pedidos",
+     * summary="Obtener todos los pedidos del cliente autenticado",
+     * tags={"Pedidos"},
+     * security={{"bearerAuth": {}}},
+     * @OA\Response(
+     * response=200,
+     * description="Lista de pedidos obtenida exitosamente.",
+     * @OA\JsonContent(
+     * type="array",
+     * @OA\Items(ref="#/components/schemas/PedidoResponseDetailed")
+     * )
+     * ),
+     * @OA\Response(
+     * response=401,
+     * description="Cliente no autenticado o sin información de cliente.",
+     * @OA\JsonContent(
+     * type="object",
+     * @OA\Property(property="message", type="string", example="Cliente no autenticado o sin información de cliente.")
+     * )
+     * )
+     * )
+     */
     public function index(Request $request)
     {
         $user = Auth::user();
@@ -165,13 +308,49 @@ class pedidoController extends BaseController
         $idCliente = $user->cliente->idCliente;
 
         $pedidos = Pedido::where('idCliente', $idCliente)
-                         ->with('productos.producto', 'factura') 
-                         ->orderBy('fechaPedido', 'desc')
-                         ->get();
+                             ->with('productos.producto', 'factura') 
+                             ->orderBy('fechaPedido', 'desc')
+                             ->get();
 
         return response()->json($pedidos);
     }
 
+    /**
+     * @OA\Get(
+     * path="/api/p/pedidos/{id}",
+     * summary="Obtener un pedido específico del cliente autenticado por ID",
+     * tags={"Pedidos"},
+     * security={{"bearerAuth": {}}},
+     * @OA\Parameter(
+     * name="id",
+     * in="path",
+     * required=true,
+     * description="ID del pedido a obtener.",
+     * @OA\Schema(type="integer", format="int64")
+     * ),
+     * @OA\Response(
+     * response=200,
+     * description="Pedido encontrado.",
+     * @OA\JsonContent(ref="#/components/schemas/PedidoResponseDetailed")
+     * ),
+     * @OA\Response(
+     * response=401,
+     * description="Cliente no autenticado o sin información de cliente.",
+     * @OA\JsonContent(
+     * type="object",
+     * @OA\Property(property="message", type="string", example="Cliente no autenticado o sin información de cliente.")
+     * )
+     * ),
+     * @OA\Response(
+     * response=404,
+     * description="Pedido no encontrado o no pertenece a este cliente.",
+     * @OA\JsonContent(
+     * type="object",
+     * @OA\Property(property="message", type="string", example="Pedido no encontrado o no pertenece a este cliente.")
+     * )
+     * )
+     * )
+     */
     public function show($id)
     {
         $user = Auth::user();
@@ -181,9 +360,9 @@ class pedidoController extends BaseController
         $idCliente = $user->cliente->idCliente;
 
         $pedido = Pedido::where('idPedido', $id)
-                         ->where('idCliente', $idCliente) 
-                         ->with('productos.producto', 'factura')
-                         ->first();
+                             ->where('idCliente', $idCliente) 
+                             ->with('productos.producto', 'factura')
+                             ->first();
 
         if (!$pedido) {
             return response()->json(['message' => 'Pedido no encontrado o no pertenece a este cliente.'], 404);
@@ -191,6 +370,31 @@ class pedidoController extends BaseController
 
         return response()->json($pedido);
     }
+
+    /**
+     * @OA\Get(
+     * path="/api/p/mis-productos-comprados",
+     * summary="Obtener todos los ítems de productos comprados por el cliente autenticado",
+     * tags={"Pedidos"},
+     * security={{"bearerAuth": {}}},
+     * @OA\Response(
+     * response=200,
+     * description="Lista de ítems de productos comprados obtenida exitosamente.",
+     * @OA\JsonContent(
+     * type="array",
+     * @OA\Items(ref="#/components/schemas/PedidoProductoWithProduct")
+     * )
+     * ),
+     * @OA\Response(
+     * response=401,
+     * description="Cliente no autenticado o sin información de cliente.",
+     * @OA\JsonContent(
+     * type="object",
+     * @OA\Property(property="message", type="string", example="Cliente no autenticado o sin información de cliente.")
+     * )
+     * )
+     * )
+     */
     public function getUserPurchaseItems(Request $request)
     {
         $user = Auth::user();
@@ -208,22 +412,49 @@ class pedidoController extends BaseController
         }
 
         $items = PedidoProducto::whereIn('idPedido', $pedidoIds)
-                               ->with('producto') 
-                               ->get();
+                                 ->with('producto') 
+                                 ->get();
 
         return response()->json($items);
     }
+
+    /**
+     * @OA\Get(
+     * path="/api/admin/pedidos/",
+     * summary="Obtener todos los pedidos con detalles para administración (solo SuperAdmin)",
+     * tags={"Pedidos", "Administración"},
+     * security={{"bearerAuth": {}}},
+     * @OA\Response(
+     * response=200,
+     * description="Pedidos obtenidos exitosamente para administración.",
+     * @OA\JsonContent(
+     * type="object",
+     * @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/PedidoResponseDetailed"))
+     * )
+     * ),
+     * @OA\Response(
+     * response=401,
+     * description="No autenticado.",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     * ),
+     * @OA\Response(
+     * response=403,
+     * description="No autorizado (solo SuperAdmin).",
+     * @OA\JsonContent(ref="#/components/schemas/ErrorResponse")
+     * )
+     * )
+     */
     public function lista()
     {
-         Log::info('PedidoController@indexAdmin - Solicitud para obtener todos los pedidos de administración.');
+        Log::info('PedidoController@indexAdmin - Solicitud para obtener todos los pedidos de administración.');
 
         $pedidos = Pedido::with([
-            // ✅ CARGA LA RELACIÓN 'cliente' y selecciona las columnas de nombre y apellido
+            //  CARGA LA RELACIÓN 'cliente' y selecciona las columnas de nombre y apellido
             'cliente:idCliente,nombreCliente,apellidoCliente', 
-            // ✅ CARGA LA RELACIÓN 'productos' (que es PedidoProducto)
+            // CARGA LA RELACIÓN 'productos' (que es PedidoProducto)
             // Y DENTRO DE ELLA, CARGA LA RELACIÓN 'producto' (el Producto real)
             'productos.producto:idProducto,nombreProducto,valorProducto', 
-            // ✅ CARGA LA RELACIÓN 'factura'
+            // CARGA LA RELACIÓN 'factura'
             'factura' 
         ])
         ->orderBy('fechaPedido', 'desc') // Ordena por fecha del pedido, más reciente primero
