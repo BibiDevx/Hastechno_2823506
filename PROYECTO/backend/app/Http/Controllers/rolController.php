@@ -5,16 +5,44 @@ namespace App\Http\Controllers;
 use App\Models\Rol;
 use Illuminate\Http\Request;
 
+/**
+ * @OA\Tag(
+ *     name="Roles",
+ *     description="Gestión de roles (solo SuperAdmin puede modificar)"
+ * )
+ */
 class rolController extends Controller
 {
-    // Obtener todos los roles
+    /**
+     * @OA\Get(
+     *     path="/api/roles",
+     *     summary="Obtener todos los roles",
+     *     tags={"Roles"},
+     *     @OA\Response(response=200, description="Lista de roles obtenida correctamente")
+     * )
+     */
     public function index()
     {
         $roles = Rol::all();
         return response()->json(['success' => true, 'roles' => $roles], 200);
     }
 
-    // Buscar un rol por ID
+    /**
+     * @OA\Get(
+     *     path="/api/roles/{idRol}",
+     *     summary="Obtener un rol por ID",
+     *     tags={"Roles"},
+     *     @OA\Parameter(
+     *         name="idRol",
+     *         in="path",
+     *         required=true,
+     *         description="ID del rol",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(response=200, description="Rol obtenido correctamente"),
+     *     @OA\Response(response=404, description="Rol no encontrado")
+     * )
+     */
     public function show($idRol)
     {
         $rol = Rol::find($idRol);
@@ -24,7 +52,24 @@ class rolController extends Controller
         return response()->json(['success' => true, 'rol' => $rol], 200);
     }
 
-    // Crear un nuevo rol (Solo SuperAdmin)
+    /**
+     * @OA\Post(
+     *     path="/api/roles",
+     *     summary="Crear un nuevo rol (solo SuperAdmin)",
+     *     tags={"Roles"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"nombreRol"},
+     *             @OA\Property(property="nombreRol", type="string", example="Moderador")
+     *         )
+     *     ),
+     *     @OA\Response(response=201, description="Rol creado correctamente"),
+     *     @OA\Response(response=403, description="No autorizado"),
+     *     @OA\Response(response=422, description="Errores de validación")
+     * )
+     */
     public function store(Request $request)
     {
         $usuario = auth()->user();
@@ -43,7 +88,32 @@ class rolController extends Controller
         return response()->json(['success' => true, 'rol' => $rol], 201);
     }
 
-    // Actualizar un rol por completo (PUT) (Solo SuperAdmin)
+    /**
+     * @OA\Put(
+     *     path="/api/roles/{idRol}",
+     *     summary="Actualizar completamente un rol (solo SuperAdmin)",
+     *     tags={"Roles"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="idRol",
+     *         in="path",
+     *         required=true,
+     *         description="ID del rol",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"nombreRol"},
+     *             @OA\Property(property="nombreRol", type="string", example="Administrador")
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Rol actualizado correctamente"),
+     *     @OA\Response(response=403, description="No autorizado"),
+     *     @OA\Response(response=404, description="Rol no encontrado"),
+     *     @OA\Response(response=422, description="Errores de validación")
+     * )
+     */
     public function update(Request $request, $idRol)
     {
         $usuario = auth()->user();
@@ -70,7 +140,30 @@ class rolController extends Controller
         ], 200);
     }
 
-    // Actualizar parcialmente un rol (PATCH) (Solo SuperAdmin)
+    /**
+     * @OA\Patch(
+     *     path="/api/roles/{idRol}",
+     *     summary="Actualizar parcialmente un rol (solo SuperAdmin)",
+     *     tags={"Roles"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="idRol",
+     *         in="path",
+     *         required=true,
+     *         description="ID del rol",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         @OA\JsonContent(
+     *             @OA\Property(property="nombreRol", type="string", example="Editor")
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Rol actualizado parcialmente"),
+     *     @OA\Response(response=403, description="No autorizado"),
+     *     @OA\Response(response=404, description="Rol no encontrado"),
+     *     @OA\Response(response=422, description="Errores de validación")
+     * )
+     */
     public function updatePartial(Request $request, $idRol)
     {
         $usuario = auth()->user();
@@ -100,7 +193,24 @@ class rolController extends Controller
         ], 200);
     }
 
-    // Eliminar un rol (Solo SuperAdmin)
+    /**
+     * @OA\Delete(
+     *     path="/api/roles/{idRol}",
+     *     summary="Eliminar un rol (solo SuperAdmin)",
+     *     tags={"Roles"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="idRol",
+     *         in="path",
+     *         required=true,
+     *         description="ID del rol",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(response=200, description="Rol eliminado correctamente"),
+     *     @OA\Response(response=403, description="No autorizado"),
+     *     @OA\Response(response=404, description="Rol no encontrado")
+     * )
+     */
     public function destroy($idRol)
     {
         $usuario = auth()->user();
