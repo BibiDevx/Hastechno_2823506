@@ -9,16 +9,32 @@ use Illuminate\Support\Facades\Hash;
 
 class clienteController extends BaseController
 {
-    // 🔹 Obtener todos los clientes
+    /**
+     * @OA\Get(
+     *     path="/api/clientes",
+     *     summary="Obtener todos los clientes",
+     *     tags={"Clientes"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(response=200, description="Clientes obtenidos correctamente")
+     * )
+     */
     public function index()
     {
-        // Carga la relación 'usuario' junto con cada cliente
         $clientes = Cliente::with('usuario')->get();
-        // Asegúrate de que tu BaseController o método de respuesta maneje el formato success/data
         return $this->sendResponse($clientes, 'Clientes obtenidos correctamente.');
     }
 
-    // 🔹 Obtener un cliente por ID
+    /**
+     * @OA\Get(
+     *     path="/api/clientes/{id}",
+     *     summary="Obtener un cliente por ID",
+     *     tags={"Clientes"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Cliente encontrado"),
+     *     @OA\Response(response=404, description="Cliente no encontrado")
+     * )
+     */
     public function show($id)
     {
         $cliente = Cliente::find($id);
@@ -28,18 +44,37 @@ class clienteController extends BaseController
         return $this->sendResponse($cliente, 'Cliente encontrado.');
     }
 
-
-    // 🔹 Actualizar parcialmente un cliente
+    /**
+     * @OA\Put(
+     *     path="/api/clientes/perfil",
+     *     summary="Actualizar parcialmente el perfil del cliente autenticado",
+     *     tags={"Clientes"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="nombreCliente", type="string"),
+     *             @OA\Property(property="apellidoCliente", type="string"),
+     *             @OA\Property(property="cedulaCliente", type="integer"),
+     *             @OA\Property(property="telefonoCliente", type="integer"),
+     *             @OA\Property(property="direccion", type="string"),
+     *             @OA\Property(property="email", type="string"),
+     *             @OA\Property(property="password", type="string")
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Perfil actualizado correctamente"),
+     *     @OA\Response(response=422, description="Errores de validación")
+     * )
+     */
     public function updatePartial(Request $request)
     {
-        $usuario = auth()->user(); // Esto obtiene al usuario logueado
-        $cliente = $usuario->cliente; // Relación cliente desde el modelo Usuario
+        $usuario = auth()->user();
+        $cliente = $usuario->cliente;
 
         if (!$cliente) {
             return $this->sendError('Cliente no encontrado.', [], 404);
         }
 
-        // Validar campos del cliente
         $validator = Validator::make($request->all(), [
             'nombreCliente' => 'sometimes|string|max:255',
             'apellidoCliente' => 'sometimes|string|max:255',
@@ -52,16 +87,10 @@ class clienteController extends BaseController
             return $this->sendError('Errores de validación.', $validator->errors(), 422);
         }
 
-        // Actualizar datos del cliente
         $cliente->update($request->only([
-            'nombreCliente',
-            'apellidoCliente',
-            'cedulaCliente',
-            'telefonoCliente',
-            'direccion',
+            'nombreCliente', 'apellidoCliente', 'cedulaCliente', 'telefonoCliente', 'direccion'
         ]));
 
-        //  Ahora actualizamos email y contraseña desde el modelo Usuario
         if ($request->has('email')) {
             $request->validate([
                 'email' => 'email|max:255|unique:usuario,email,' . $usuario->idUsuario . ',idUsuario',
@@ -76,29 +105,59 @@ class clienteController extends BaseController
             $usuario->password = Hash::make($request->password);
         }
 
-        $usuario->save(); // Guardamos los cambios de email o password si hubo
+        $usuario->save();
 
         return $this->sendResponse($cliente, 'Perfil actualizado correctamente.');
     }
 
-
+    /**
+     * @OA\Delete(
+     *     path="/api/clientes/eliminar",
+     *     summary="Eliminar cuenta del cliente autenticado",
+     *     tags={"Clientes"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(response=200, description="Cuenta eliminada correctamente"),
+     *     @OA\Response(response=404, description="Cliente no encontrado")
+     * )
+     */
     public function destroy()
     {
-        $usuario = auth()->user(); // Obtiene el usuario logueado
-        $cliente = $usuario->cliente; // Relación cliente desde el modelo Usuario
+        $usuario = auth()->user();
+        $cliente = $usuario->cliente;
 
         if (!$cliente) {
             return $this->sendError('Cliente no encontrado.', [], 404);
         }
 
-        // Eliminar datos del cliente
         $cliente->delete();
-
-        // Eliminar el usuario (que está asociado al cliente)
         $usuario->delete();
 
         return $this->sendResponse([], 'Cuenta eliminada correctamente.');
     }
+
+    /**
+     * @OA\Put(
+     *     path="/api/admin/clientes/{id}",
+     *     summary="Actualizar cliente por ID (admin)",
+     *     tags={"Clientes"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="nombreCliente", type="string"),
+     *             @OA\Property(property="apellidoCliente", type="string"),
+     *             @OA\Property(property="cedulaCliente", type="integer"),
+     *             @OA\Property(property="email", type="string"),
+     *             @OA\Property(property="password", type="string"),
+     *             @OA\Property(property="telefonoCliente", type="integer"),
+     *             @OA\Property(property="direccion", type="string")
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Cliente actualizado correctamente"),
+     *     @OA\Response(response=404, description="Cliente no encontrado")
+     * )
+     */
     public function actualizaCliente(Request $request, $id)
     {
         $cliente = Cliente::find($id);
@@ -106,7 +165,6 @@ class clienteController extends BaseController
             return $this->sendError('Cliente no encontrado.', [], 404);
         }
 
-        // Validaciones solo para los campos enviados
         $validator = Validator::make($request->all(), [
             'nombreCliente' => 'sometimes|string|max:255',
             'apellidoCliente' => 'sometimes|string|max:255',
@@ -121,17 +179,10 @@ class clienteController extends BaseController
             return $this->sendError('Errores de validación.', $validator->errors(), 422);
         }
 
-        // Obtener los campos que se enviaron
         $input = $request->only([
-            'nombreCliente',
-            'apellidoCliente',
-            'cedulaCliente',
-            'email',
-            'telefonoCliente',
-            'direccion',
+            'nombreCliente', 'apellidoCliente', 'cedulaCliente', 'email', 'telefonoCliente', 'direccion',
         ]);
 
-        // Si enviaron clave, cifrarla
         if ($request->has('password')) {
             $input['password'] = Hash::make($request->password);
         }
@@ -140,6 +191,18 @@ class clienteController extends BaseController
 
         return $this->sendResponse($cliente, 'Cliente actualizado correctamente.');
     }
+
+    /**
+     * @OA\Delete(
+     *     path="/api/admin/clientes/{id}",
+     *     summary="Eliminar cliente por ID (admin)",
+     *     tags={"Clientes"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Cliente eliminado exitosamente"),
+     *     @OA\Response(response=404, description="Cliente no encontrado")
+     * )
+     */
     public function eliminaCliente($id)
     {
         $cliente = Cliente::find($id);
@@ -150,5 +213,4 @@ class clienteController extends BaseController
         $cliente->delete();
         return $this->sendResponse([], 'Cliente eliminado exitosamente.');
     }
-
 }
