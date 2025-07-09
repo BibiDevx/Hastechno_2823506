@@ -105,9 +105,6 @@ export default function Dashboard() {
               </div>
               <i className="bi bi-currency-dollar display-4 opacity-75"></i> {/* Icono grande */}
             </div>
-            <div className="card-footer bg-primary-dark border-0 text-end py-2 px-3 small rounded-bottom-3">
-                <a href="/admin/ventas" className="text-white text-decoration-none">Ver Reporte <i className="bi bi-arrow-right-circle-fill ms-1"></i></a>
-            </div>
           </div>
         </div>
 

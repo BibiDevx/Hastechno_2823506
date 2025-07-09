@@ -157,8 +157,8 @@ class AuthController extends BaseController
     {
         // Validación de datos
         $validator = Validator::make($request->all(), [
-            'nombreCliente' => 'required|string|max:255',
-            'apellidoCliente' => 'required|string|max:255',
+            'nombreCliente' => 'required|string|max:255|regex:/^[\pL\s\-]+$/u',
+            'apellidoCliente' => 'required|string|max:255|regex:/^[\pL\s\-]+$/u',
             'cedulaCliente' => 'required|numeric|unique:cliente,cedulaCliente',
             'email' => 'required|string|email|max:255|unique:usuario,email',
             'password' => 'required|string|min:6',
@@ -188,7 +188,7 @@ class AuthController extends BaseController
             'telefonoCliente' => $request->telefonoCliente,
             'direccion' => $request->direccion,
         ]);
-        return response()->json(['message' => 'Cliente registrado exitosamente', 'cliente' => $cliente], 201);
+        return response()->json(['success' => true, 'message' => 'Cliente registrado exitosamente', 'cliente' => $cliente], 201);
     }
 
     /**
@@ -232,8 +232,8 @@ class AuthController extends BaseController
     {
         // Validación de datos
         $validator = Validator::make($request->all(), [
-            'nombreAdmin' => 'required|string|max:255',
-            'apellidoAdmin' => 'required|string|max:255',
+            'nombreAdmin' => 'required|string|max:255|regex:/^[\pL\s\-]+$/u',
+            'apellidoAdmin' => 'required|string|max:255|regex:/^[\pL\s\-]+$/u',
             'cedulaAdmin' => 'required|numeric|unique:admin,cedulaAdmin',
             'email' => 'required|string|email|max:255|unique:usuario,email',
             'password' => 'required|string|min:6',

@@ -27,28 +27,30 @@ const RegistroCliente = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    let newValue = value;
 
-    // ✅ Lógica para permitir solo números en identificación y teléfono
+    // Lógica para permitir solo números en identificación y teléfono
     if (name === "identificacion" || name === "telefono") {
       // Filtra cualquier caracter que no sea un dígito
-      const numericValue = value.replace(/\D/g, ''); 
-      setForm({
-        ...form,
-        [name]: numericValue,
-      });
-    } else {
-      setForm({
-        ...form,
-        [name]: value,
-      });
+      newValue = value.replace(/\D/g, ''); 
+    } 
+    // ✅ Lógica para no aceptar números en nombres y apellidos
+    else if (name === "nombres" || name === "apellidos") {
+      // Filtra cualquier caracter que no sea una letra (incluyendo acentos y ñ), espacio o guion
+      newValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
     }
+
+    setForm({
+      ...form,
+      [name]: newValue,
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     setMessage(null); // Limpiar mensajes anteriores
-    setMessageType(null);
+    setMessageType(null); // Limpiar tipo de mensaje anterior
     setLoading(true); // Activar estado de carga
 
     if (form.password !== form.confirmarPassword) {
@@ -58,8 +60,22 @@ const RegistroCliente = () => {
       return;
     }
 
+    // ✅ Validación adicional en frontend para nombres y apellidos (aunque ya se filtren en handleChange)
+    if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(form.nombres)) {
+      setMessage("El nombre solo puede contener letras, espacios y guiones.");
+      setMessageType("danger");
+      setLoading(false);
+      return;
+    }
+    if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(form.apellidos)) {
+      setMessage("El apellido solo puede contener letras, espacios y guiones.");
+      setMessageType("danger");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/register/cliente`, { // ✅ Usa axios.post
+      const response = await axios.post(`${API_BASE_URL}/auth/register/cliente`, {
         nombreCliente: form.nombres,
         apellidoCliente: form.apellidos,
         cedulaCliente: form.identificacion,
@@ -73,7 +89,7 @@ const RegistroCliente = () => {
       // Si la API devuelve un campo 'success' o similar en el cuerpo de la respuesta
       if (response.data.success) { 
         setMessage("¡Registro exitoso! Ya puedes iniciar sesión.");
-        setMessageType("success");
+        setMessageType("success"); // Aseguramos que sea 'success' aquí
         // Limpiar el formulario después de un registro exitoso
         setForm({
           nombres: "",
@@ -88,8 +104,7 @@ const RegistroCliente = () => {
         // Opcional: Redirigir al usuario a la página de login después de un tiempo
         setTimeout(() => {
           navigate("/login"); 
-        }, 3000); 
-
+        }, 2000); // Reducido a 2 segundos para una mejor UX
       } else {
         // En caso de que la API devuelva success: false pero sin un error en el catch
         setMessage(response.data.message || "Error al registrar el cliente.");
@@ -124,6 +139,17 @@ const RegistroCliente = () => {
 
   return (
     <div className="d-flex justify-content-center align-items-center min-vh-100 bg-light p-3"> {/* Centrado vertical y horizontal, padding */}
+      <style>
+        {`
+        .animated.fadeIn {
+          animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        `}
+      </style>
       <div className="card shadow-lg p-4 rounded-3" style={{ maxWidth: "600px", width: "100%" }}> {/* Sombra, redondeado, ancho responsivo */}
         <h2 className="text-center mb-4 fw-bold text-primary">
           <i className="bi bi-person-plus-fill me-3"></i>Registro de Nuevo Cliente
@@ -152,6 +178,8 @@ const RegistroCliente = () => {
                 onChange={handleChange}
                 required
                 disabled={loading}
+                pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑ\s\-]*" // ✅ Permite letras, espacios y guiones
+                title="Solo se permiten letras, espacios y guiones."
               />
             </div>
             <div className="col-md-6">
@@ -167,6 +195,8 @@ const RegistroCliente = () => {
                 onChange={handleChange}
                 required
                 disabled={loading}
+                pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑ\s\-]*" // ✅ Permite letras, espacios y guiones
+                title="Solo se permiten letras, espacios y guiones."
               />
             </div>
           </div>
@@ -176,15 +206,15 @@ const RegistroCliente = () => {
               <i className="bi bi-credit-card-fill me-2"></i>Número de Identificación
             </label>
             <input
-              type="text" // ✅ Mantenemos 'text' para flexibilidad (ej. ceros a la izquierda)
+              type="text" // Mantenemos 'text' para flexibilidad (ej. ceros a la izquierda)
               id="identificacion"
               className="form-control form-control-lg rounded-pill"
               name="identificacion"
               value={form.identificacion}
-              onChange={handleChange} // ✅ Aquí se aplica la lógica de filtrado
+              onChange={handleChange} // Aquí se aplica la lógica de filtrado
               required
-              inputMode="numeric" // ✅ Sugiere teclado numérico en móviles
-              pattern="[0-9]*" // ✅ Validación básica en HTML5 para solo dígitos
+              inputMode="numeric" // Sugiere teclado numérico en móviles
+              pattern="[0-9]*" // Validación básica en HTML5 para solo dígitos
               disabled={loading}
             />
           </div>
@@ -225,14 +255,14 @@ const RegistroCliente = () => {
               <i className="bi bi-telephone-fill me-2"></i>Teléfono
             </label>
             <input
-              type="tel" // ✅ Semánticamente correcto para teléfono
+              type="tel" // Semánticamente correcto para teléfono
               id="telefono"
               className="form-control form-control-lg rounded-pill"
               name="telefono"
               value={form.telefono}
-              onChange={handleChange} // ✅ Aquí se aplica la lógica de filtrado
-              inputMode="numeric" // ✅ Sugiere teclado numérico en móviles
-              pattern="[0-9]*" // ✅ Validación básica en HTML5 para solo dígitos
+              onChange={handleChange} // Aquí se aplica la lógica de filtrado
+              inputMode="numeric" // Sugiere teclado numérico en móviles
+              pattern="[0-9]*" // Validación básica en HTML5 para solo dígitos
               disabled={loading}
             />
           </div>

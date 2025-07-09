@@ -27,11 +27,11 @@ const CheckoutPage = () => {
   // ✅ Estado para el método de pago seleccionado
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('Tarjeta de Crédito'); // Valor por defecto
 
-  // ✅ Métodos de pago disponibles (con imágenes de placeholder)
+  // ✅ Métodos de pago disponibles (con imágenes de placeholder) - ACTUALIZADO
   const paymentMethods = [
     { name: 'Tarjeta de Crédito', icon: 'bi-credit-card-fill', image: 'https://placehold.co/100x40/3366cc/ffffff?text=Tarjeta+Crédito' },
-    { name: 'PayPal', icon: 'bi-paypal', image: 'https://placehold.co/100x40/003087/ffffff?text=PayPal' },
-    { name: 'Transferencia Bancaria', icon: 'bi-bank', image: 'https://placehold.co/100x40/6c757d/ffffff?text=Transferencia' },
+    { name: 'Tarjeta de Débito', icon: 'bi-credit-card', image: 'https://placehold.co/100x40/6c757d/ffffff?text=Tarjeta+Débito' }, // Cambiado de Transferencia Bancaria
+    { name: 'Efecty', icon: 'bi-cash-coin', image: 'https://placehold.co/100x40/ffc107/000000?text=Efecty' }, // Nuevo método de pago
   ];
 
   // Efecto para cargar el perfil del usuario y el carrito
@@ -142,11 +142,11 @@ const CheckoutPage = () => {
 
   if (isLoading) { 
     return (
-      <div className="container mt-5 text-center">
+      <div className="container mt-5 text-center py-5">
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Cargando...</span>
         </div>
-        <p className="mt-2">Cargando información, por favor espera...</p>
+        <p className="mt-3 fs-5 text-muted">Cargando información, por favor espera...</p>
       </div>
     );
   }
@@ -154,7 +154,7 @@ const CheckoutPage = () => {
   // Si no está autenticado después de cargar el perfil
   if (!isAuthenticated) { 
       return (
-          <div className="container mt-5 alert alert-warning text-center" role="alert">
+          <div className="container mt-5 alert alert-warning text-center animated fadeIn" role="alert">
               <i className="bi bi-person-exclamation me-2"></i> Debes <a href="/login" className="alert-link">iniciar sesión</a> para finalizar la compra.
           </div>
       );
@@ -163,7 +163,7 @@ const CheckoutPage = () => {
   // Si hay error en carrito, pedido o perfil
   if (hasError) { 
     return (
-      <div className="container mt-5 alert alert-danger" role="alert">
+      <div className="container mt-5 alert alert-danger animated fadeIn" role="alert">
         <i className="bi bi-exclamation-triangle-fill me-2"></i> Error: {cartError || orderError || profileError || "Error desconocido."}
         {(!userProfile || !userProfile.cliente) && (
             <p className="mt-2 mb-0">Por favor, asegúrate de que tu perfil esté completo o contacta con soporte.</p>
@@ -176,7 +176,7 @@ const CheckoutPage = () => {
   if (!userProfile || !userProfile.cliente) {
     return (
       <div className="container mt-5">
-        <div className="alert alert-warning text-center" role="alert">
+        <div className="alert alert-warning text-center animated fadeIn" role="alert">
             <i className="bi bi-person-fill-exclamation me-2"></i> No se ha encontrado información de perfil completa para tu cuenta de cliente.
             <p className="mt-2 mb-0">Por favor, <Link to="/editar-perfil" className="alert-link">completa tu información de perfil</Link> (nombre, apellido, email, dirección, teléfono, cédula) para poder finalizar tu compra.</p>
         </div>
@@ -187,7 +187,7 @@ const CheckoutPage = () => {
   // Si el carrito está vacío después de cargar
   if (cartItems.length === 0) {
     return (
-      <div className="container mt-5 alert alert-info text-center" role="alert">
+      <div className="container mt-5 alert alert-info text-center animated fadeIn" role="alert">
         <i className="bi bi-cart-x-fill me-2"></i> Tu carrito está vacío. 
         <Link to="/productos" className="alert-link ms-2">Explora nuestros productos</Link>.
       </div>
@@ -196,11 +196,35 @@ const CheckoutPage = () => {
 
 
   return (
-    <div className="container mt-5 mb-5">
-      <h1 className="text-center fw-bold text-primary mb-4">Finalizar Compra</h1>
+    <div className="container mt-5 mb-5 p-3">
+      <style>
+        {`
+        .animated.fadeIn {
+          animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .payment-method-option {
+          transition: all 0.2s ease-in-out;
+          cursor: pointer;
+        }
+        .payment-method-option:hover {
+          background-color: #f8f9fa;
+          border-color: #007bff;
+        }
+        .payment-method-option input[type="radio"]:checked + label {
+          color: #007bff !important;
+        }
+        `}
+      </style>
+      <h1 className="text-center fw-bold text-primary mb-5">
+        <i className="bi bi-bag-check-fill me-3"></i>Finalizar Compra
+      </h1>
 
       {orderError && ( // Mostrar error específico del pedido si existe
-        <div className="alert alert-danger text-center mb-4" role="alert">
+        <div className="alert alert-danger text-center animated fadeIn mb-4" role="alert">
           <i className="bi bi-exclamation-triangle-fill me-2"></i>{orderError}
         </div>
       )}
@@ -208,45 +232,45 @@ const CheckoutPage = () => {
       <div className="row g-4">
         {/* Columna de Información de Envío y Facturación (Izquierda) */}
         <div className="col-lg-6 mb-4">
-          <div className="card shadow-sm rounded-lg h-100">
-            <div className="card-header bg-info text-white fw-bold fs-5 py-3 rounded-top-lg">
+          <div className="card shadow-lg rounded-3 h-100">
+            <div className="card-header bg-info text-white fw-bold fs-5 py-3 rounded-top-3">
               <i className="bi bi-geo-alt-fill me-2"></i> Información de Envío y Facturación
             </div>
             <div className="card-body p-4">
-              <p className="mb-3 text-muted fst-italic">
+              <p className="mb-3 text-muted fst-italic small">
                 Verifica que tu información personal sea correcta. Para editar, haz clic en "Editar Información".
               </p>
               <form>
                 {/* Campos de información del usuario */}
                 <div className="mb-3">
                   <label htmlFor="nombre" className="form-label fw-semibold">Nombre:</label>
-                  <input type="text" className="form-control" id="nombre" name="nombre" value={userProfile?.cliente?.nombreCliente || ''} readOnly />
+                  <input type="text" className="form-control rounded-pill" id="nombre" name="nombre" value={userProfile?.cliente?.nombreCliente || ''} readOnly />
                 </div>
                 <div className="mb-3">
                   <label htmlFor="apellido" className="form-label fw-semibold">Apellido:</label>
-                  <input type="text" className="form-control" id="apellido" name="apellido" value={userProfile?.cliente?.apellidoCliente || ''} readOnly />
+                  <input type="text" className="form-control rounded-pill" id="apellido" name="apellido" value={userProfile?.cliente?.apellidoCliente || ''} readOnly />
                 </div>
                 <div className="mb-3">
                   <label htmlFor="email" className="form-label fw-semibold">Email:</label>
-                  <input type="email" className="form-control" id="email" name="email" value={userProfile?.email || ''} readOnly />
+                  <input type="email" className="form-control rounded-pill" id="email" name="email" value={userProfile?.email || ''} readOnly />
                 </div>
                 <div className="mb-3">
                   <label htmlFor="telefono" className="form-label fw-semibold">Teléfono:</label>
-                  <input type="tel" className="form-control" id="telefono" name="telefono" value={userProfile?.cliente?.telefonoCliente || ''} readOnly />
+                  <input type="tel" className="form-control rounded-pill" id="telefono" name="telefono" value={userProfile?.cliente?.telefonoCliente || ''} readOnly />
                 </div>
                 <div className="mb-3">
                   <label htmlFor="direccion" className="form-label fw-semibold">Dirección:</label>
-                  <textarea className="form-control" id="direccion" name="direccion" rows="3" value={userProfile?.cliente?.direccion || ''} readOnly></textarea>
+                  <textarea className="form-control rounded-3" id="direccion" name="direccion" rows="3" value={userProfile?.cliente?.direccion || ''} readOnly></textarea>
                 </div>
                 <div className="mb-3">
                   <label htmlFor="cedula" className="form-label fw-semibold">Cédula:</label>
-                  <input type="text" className="form-control" id="cedula" name="cedula" value={userProfile?.cliente?.cedulaCliente || ''} readOnly />
+                  <input type="text" className="form-control rounded-pill" id="cedula" name="cedula" value={userProfile?.cliente?.cedulaCliente || ''} readOnly />
                 </div>
                 {/* Botón para redirigir a la página de edición del perfil */}
                 <div className="text-end mt-3">
                   <button 
                     type="button" 
-                    className="btn btn-outline-info btn-sm rounded-pill" 
+                    className="btn btn-outline-info btn-sm rounded-pill fw-semibold" 
                     onClick={() => navigate('/editar-perfil')} 
                   >
                     <i className="bi bi-pencil-fill me-1"></i> Editar Información
@@ -260,8 +284,8 @@ const CheckoutPage = () => {
         {/* Columna de Resumen del Pedido y Método de Pago (Derecha) */}
         <div className="col-lg-6 mb-4">
           {/* Sección de Resumen del Pedido */}
-          <div className="card shadow-sm rounded-lg mb-4"> {/* mb-4 para espacio con el método de pago */}
-            <div className="card-header bg-primary text-white fw-bold fs-5 py-3 rounded-top-lg">
+          <div className="card shadow-lg rounded-3 mb-4"> {/* mb-4 para espacio con el método de pago */}
+            <div className="card-header bg-primary text-white fw-bold fs-5 py-3 rounded-top-3">
               <i className="bi bi-receipt me-2"></i> Resumen de tu Pedido
             </div>
             <div className="card-body p-4">
@@ -286,13 +310,17 @@ const CheckoutPage = () => {
           </div>
 
           {/* ✅ Sección de Método de Pago */}
-          <div className="card shadow-sm rounded-lg">
-            <div className="card-header bg-success text-white fw-bold fs-5 py-3 rounded-top-lg">
+          <div className="card shadow-lg rounded-3">
+            <div className="card-header bg-success text-white fw-bold fs-5 py-3 rounded-top-3">
               <i className="bi bi-credit-card-fill me-2"></i> Selecciona Método de Pago
             </div>
             <div className="card-body p-4">
               {paymentMethods.map((method) => (
-                <div className="form-check mb-3 p-3 border rounded-lg payment-method-option" key={method.name}>
+                <div 
+                  className={`form-check mb-3 p-3 border rounded-3 payment-method-option ${selectedPaymentMethod === method.name ? 'border-primary shadow-sm' : ''}`} 
+                  key={method.name}
+                  onClick={() => setSelectedPaymentMethod(method.name)} // Permite seleccionar haciendo clic en toda la card
+                >
                   <input
                     className="form-check-input me-3"
                     type="radio"
@@ -317,7 +345,7 @@ const CheckoutPage = () => {
               
               {/* Mensajes de estado de la operación (cargando, error) */}
               {orderStatus === 'loading' && (
-                <div className="alert alert-info text-center mt-4" role="alert">
+                <div className="alert alert-info text-center mt-4 animated fadeIn" role="alert">
                   <div className="spinner-border spinner-border-sm me-2" role="status">
                     <span className="visually-hidden">Cargando...</span>
                   </div>
@@ -325,7 +353,7 @@ const CheckoutPage = () => {
                 </div>
               )}
               {orderStatus === 'failed' && orderError && (
-                <div className="alert alert-danger text-center mt-4" role="alert">
+                <div className="alert alert-danger text-center mt-4 animated fadeIn" role="alert">
                   <i className="bi bi-x-circle-fill me-2"></i> Error: {orderError.message || 'Hubo un problema al confirmar su compra.'}
                 </div>
               )}

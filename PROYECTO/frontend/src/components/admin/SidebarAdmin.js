@@ -68,7 +68,8 @@ export default function SidebarAdmin() {
               } ms-auto`}
             ></i>
           </div>
-          <div className="collapse show ms-3">
+          {/* ✅ CORREGIDO: Ahora el colapso de Gestión depende del estado isGestionOpen */}
+          <div className={`collapse ${isGestionOpen ? "show" : ""} ms-3`}>
             {/* Siempre visible, no depende del rol */}
             <Link className="nav-link text-white py-1" to="/admin/productos">
               Productos
@@ -95,7 +96,9 @@ export default function SidebarAdmin() {
             ></i>
           </div>
           <div className={`collapse ${isUsuariosOpen ? "show" : ""} ms-3`}>
-            
+            {/* Estos enlaces solo se muestran si el usuario tiene el rol "SuperAdmin".
+              Asegúrate de que 'user.rol' contenga el valor correcto del rol del usuario.
+            */}
             {user?.rol === "SuperAdmin" && (
               <Link className="nav-link text-white py-1" to="/admin/usuarios-y-roles">
                 Usuarios y Roles

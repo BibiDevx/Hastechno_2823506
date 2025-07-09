@@ -172,8 +172,8 @@ class clienteController extends BaseController
 
         // Validar campos del cliente
         $validator = Validator::make($request->all(), [
-            'nombreCliente' => 'sometimes|string|max:255',
-            'apellidoCliente' => 'sometimes|string|max:255',
+            'nombreCliente' => 'sometimes|string|max:255|regex:/^[\pL\s\-]+$/u',
+            'apellidoCliente' => 'sometimes|string|max:255|regex:/^[\pL\s\-]+$/u',
             'cedulaCliente' => 'sometimes|numeric|unique:cliente,cedulaCliente,' . $cliente->idCliente . ',idCliente',
             'telefonoCliente' => 'sometimes|numeric',
             'direccion' => 'sometimes|string|max:255',
@@ -318,8 +318,8 @@ class clienteController extends BaseController
 
         // Validaciones solo para los campos enviados
         $validator = Validator::make($request->all(), [
-            'nombreCliente' => 'sometimes|string|max:255',
-            'apellidoCliente' => 'sometimes|string|max:255',
+            'nombreCliente' => 'sometimes|string|max:255|regex:/^[\pL\s\-]+$/u',
+            'apellidoCliente' => 'sometimes|string|max:255|regex:/^[\pL\s\-]+$/u',
             'cedulaCliente' => 'sometimes|numeric|unique:cliente,cedulaCliente,' . $id . ',idCliente',
             // La validación de email aquí es para el campo del cliente, no del usuario.
             // Si el email se actualiza a través del modelo Usuario, esta validación debe ser en el modelo Usuario.

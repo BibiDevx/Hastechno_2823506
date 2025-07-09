@@ -171,8 +171,8 @@ class adminController extends BaseController
         }
 
         $validator = Validator::make($request->all(), [
-            'nombreAdmin' => 'sometimes|string|max:255',
-            'apellidoAdmin' => 'sometimes|string|max:255',
+            'nombreAdmin' => 'sometimes|string|max:255|regex:/^[\pL\s\-]+$/u',
+            'apellidoAdmin' => 'sometimes|string|max:255|regex:/^[\pL\s\-]+$/u',
             'cedulaAdmin' => 'sometimes|numeric|unique:admin,cedulaAdmin,' . $admin->idAdmin . ',idAdmin', // Usando 'admin' como nombre de tabla singular
             'telefonoAdmin' => 'sometimes|numeric',
             'email' => 'sometimes|email|max:255|unique:usuario,email,' . $usuario->idUsuario . ',idUsuario', // Usando 'usuario' como nombre de tabla singular
