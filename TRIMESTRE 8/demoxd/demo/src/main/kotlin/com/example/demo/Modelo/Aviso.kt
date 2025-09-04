@@ -1,6 +1,6 @@
 package com.example.demo.Modelo
 
-class avisos (
+data class Aviso (
     val idAviso:Int?=null,
     val idUsuario: Int,
     val titulo:String,

@@ -1,8 +1,9 @@
 package com.example.demo.Modelo
 
-class usuarios(
-    val idUsuarios: Int?=null,
+data class Usuario(
+    val idUsuario: Int?=null,
     val email: String,
+    val password: String,
     val nombre:String,
     val cedula: Int,
     val direccion: String,
