@@ -265,14 +265,29 @@ class categoriaController extends BaseController
             return $this->sendError('Categoría no encontrada');
         }
 
-        // Se recomienda añadir lógica para verificar si la categoría tiene productos asociados antes de eliminar.
-        // Ejemplo:
-        // if ($categoria->productos()->exists()) {
-        //     return $this->sendError('No se puede eliminar la categoría porque tiene productos asociados.', [], 409);
-        // }
+        if ($categoria->productos()->exists()) {
+            return $this->sendError(
+                'No se puede eliminar la categoría porque tiene productos asociados.',
+                [],
+                409
+            );
+        }
 
-        $categoria->delete();
+        try {
+            $categoria->delete();
 
-        return $this->sendResponse([], 'Categoría eliminada correctamente');
+            return $this->sendResponse([], 'Categoría eliminada correctamente');
+
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->getCode() == '23000') { // Restricción FK violada
+                return $this->sendError(
+                    'No se puede eliminar la categoría porque tiene productos asociados.',
+                    [],
+                    409
+                );
+            }
+
+            return $this->sendError('Error al eliminar la categoría', [], 500);
+        }
     }
 }

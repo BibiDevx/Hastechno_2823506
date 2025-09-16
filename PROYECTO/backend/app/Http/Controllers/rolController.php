@@ -224,18 +224,20 @@ class rolController extends Controller
             return response()->json(['error' => 'Rol no encontrado'], 404);
         }
 
-        $request->validate([
-            'nombreRol' => 'required|string|unique:rol,nombreRol,' . $idRol . ',idRol|max:50',
+        // 🚫 Bloquear cambios al SuperAdmin
+        if (strtolower($rol->nombreRol) === 'superadmin') {
+            return response()->json([
+                'error' => 'No se puede modificar el rol SuperAdmin.'
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'nombreRol' => 'required|string|max:255|unique:rol,nombreRol,' . $idRol . ',idRol',
         ]);
 
-        $rol->nombreRol = $request->nombreRol;
-        $rol->save();
+        $rol->update($validated);
 
-        return response()->json([
-            'success' => true,
-            'rol' => $rol,
-            'message' => 'Rol actualizado correctamente'
-        ], 200);
+        return response()->json(['success' => true, 'message' => 'Rol actualizado correctamente'], 200);
     }
 
     /**
@@ -308,26 +310,20 @@ class rolController extends Controller
             return response()->json(['error' => 'Rol no encontrado'], 404);
         }
 
-        // Usar Validator::make para 'sometimes' en PATCH
-        $validator = Validator::make($request->all(), [
-            'nombreRol' => 'sometimes|string|unique:rol,nombreRol,' . $idRol . ',idRol|max:50',
+        // 🚫 Bloquear cambios al SuperAdmin
+        if (strtolower($rol->nombreRol) === 'superadmin') {
+            return response()->json([
+                'error' => 'No se puede modificar el rol SuperAdmin.'
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'nombreRol' => 'sometimes|string|max:255|unique:rol,nombreRol,' . $idRol . ',idRol',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json(['error' => 'Errores de validación.', 'data' => $validator->errors()], 422);
-        }
+        $rol->update($validated);
 
-        if ($request->has('nombreRol')) {
-            $rol->nombreRol = $request->nombreRol;
-        }
-
-        $rol->save();
-
-        return response()->json([
-            'success' => true,
-            'rol' => $rol,
-            'message' => 'Rol actualizado parcialmente'
-        ], 200);
+        return response()->json(['success' => true, 'message' => 'Rol actualizado parcialmente'], 200);
     }
 
     /**
@@ -385,6 +381,12 @@ class rolController extends Controller
         $rol = Rol::find($idRol);
         if (!$rol) {
             return response()->json(['error' => 'Rol no encontrado'], 404);
+        }
+
+        if (strtolower($rol->nombreRol) === 'superadmin') {
+            return response()->json([
+                'error' => 'No se puede eliminar el rol SuperAdmin.'
+            ], 403);
         }
 
         $rol->delete();

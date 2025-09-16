@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 27-06-2025 a las 02:24:23
+-- Tiempo de generación: 16-09-2025 a las 03:32:21
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -50,7 +50,6 @@ INSERT INTO `admin` (`idAdmin`, `idUsuario`, `cedulaAdmin`, `nombreAdmin`, `apel
 (5, 6, '333', 'root', 'Admin', '3123456789', '2025-04-17 09:16:15', '2025-04-17 09:16:15'),
 (6, 7, '444', 'prueba', 'Admin', '3123456789', '2025-04-17 09:17:27', '2025-04-17 09:17:27'),
 (7, 8, '555', 'example', 'Admin', '3123456789', '2025-04-17 09:18:35', '2025-04-17 09:18:35'),
-(8, 9, '1000576803', 'Brian', 'Beltran', '3208332507', '2025-04-17 09:19:38', '2025-04-17 09:19:38'),
 (10, 17, '666', 'xd', 'xd', '3323456789', '2025-06-07 05:30:18', '2025-06-07 05:30:18');
 
 -- --------------------------------------------------------
@@ -72,6 +71,7 @@ CREATE TABLE `cache` (
 INSERT INTO `cache` (`key`, `value`, `expiration`) VALUES
 ('laravel_cache_4oWEsM4RR4DRhfeY', 's:7:\"forever\";', 2060382594),
 ('laravel_cache_7gRUmkz00OPZZKgf', 's:7:\"forever\";', 2059152071),
+('laravel_cache_92DUVRSaRSjS5nYN', 's:7:\"forever\";', 2073346281),
 ('laravel_cache_aabrs4rvTWJ6kZBg', 's:7:\"forever\";', 2064615335),
 ('laravel_cache_AFNKLXpfBd26fzQx', 's:7:\"forever\";', 2064535360),
 ('laravel_cache_AReXyj4kYqJdcjcY', 's:7:\"forever\";', 2060714898),
@@ -603,7 +603,6 @@ INSERT INTO `usuario` (`idUsuario`, `email`, `password`, `idRol`, `created_at`, 
 (6, 'root@prueba.com', '$2y$12$ZyZqk9dvfQsnYXHZOI3X4Oe9QP1Cb6Ib/O8bhfobUZzTQRxo/PWT6', 2, '2025-04-17 09:16:15', '2025-04-17 04:30:33'),
 (7, 'ex@prueba.com', '$2y$12$9pr1ONU0v2u9jT6EDetDn.eYo3rZ5Nm/nVoE2PVMde1YGSwonDmOq', 2, '2025-04-17 09:17:27', '2025-04-19 06:58:22'),
 (8, 'example@prueba.com', '$2y$12$sYvQuOqHUX0uev9.93uxPuORj1FCYqUslBh9QlbT3I1.JmOwm5bVi', 2, '2025-04-17 09:18:35', '2025-04-17 09:18:35'),
-(9, 'babeltranp@gmail.com', '$2y$12$NDlsswFkKy5D0FO9X7bFTeN4hsGgRQDdcCE9a0qD1EqwY/7j/Yl4i', 3, '2025-04-17 09:19:38', '2025-04-17 09:25:20'),
 (11, 'laura.gomez@example.com', '$2y$12$Gf5rU5SEuCiQGxdWJ/7gPueXprxOZayG6ukPtuDAz45FAqKsZ0RC.', 1, '2025-04-19 05:26:47', '2025-04-19 05:26:47'),
 (12, 'carlos.ramirez@example.com', '$2y$12$fdBCapflWa4fTGwgzlZnu.vWo6/YMrww.jMs36ObKDqQYrcDBFwIm', 1, '2025-04-19 05:27:31', '2025-04-19 05:27:31'),
 (13, 'diana.martinez@example.com', '$2y$12$xTDU7R.MS.PdsxevXJC2je/jdwC.DWGBd/xUAfdOxaPwMxThq0XTm', 1, '2025-04-19 05:27:41', '2025-04-19 05:27:41'),
@@ -895,7 +894,7 @@ ALTER TABLE `carrito`
 -- Filtros para la tabla `categoriaproducto`
 --
 ALTER TABLE `categoriaproducto`
-  ADD CONSTRAINT `fk_producto_tienda_categoria_categoria1` FOREIGN KEY (`idCategoria`) REFERENCES `categoria` (`idCategoria`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_producto_tienda_categoria_categoria1` FOREIGN KEY (`idCategoria`) REFERENCES `categoria` (`idCategoria`) ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_producto_tienda_categoria_producto1` FOREIGN KEY (`idProducto`) REFERENCES `producto` (`idProducto`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
@@ -934,7 +933,7 @@ ALTER TABLE `producto`
 -- Filtros para la tabla `usuario`
 --
 ALTER TABLE `usuario`
-  ADD CONSTRAINT `fk_usuario_rol1` FOREIGN KEY (`idRol`) REFERENCES `rol` (`idRol`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_usuario_rol1` FOREIGN KEY (`idRol`) REFERENCES `rol` (`idRol`) ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
