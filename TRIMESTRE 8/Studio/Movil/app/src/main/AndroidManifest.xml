@@ -1,20 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          xmlns:tools="http://schemas.android.com/tools">
-
-    <!-- 🚀 Permiso para acceder a internet -->
+          package="com.example.classmovil">
     <uses-permission android:name="android.permission.INTERNET" />
-
     <application
             android:allowBackup="true"
-            android:dataExtractionRules="@xml/data_extraction_rules"
-            android:fullBackupContent="@xml/backup_rules"
             android:label="@string/app_name"
             android:supportsRtl="true"
             android:theme="@style/Theme.ClassMovil">
 
+        <!-- Actividad principal (se abre al iniciar la app) -->
         <activity
-                android:name="com.example.classmovil.MainActivity"
+                android:name=".vista.main.MainActivity"
                 android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -22,5 +18,16 @@
             </intent-filter>
         </activity>
 
+        <!-- Actividad de Categorías -->
+        <activity android:name=".vista.categoria.CategoriaActivity"
+                  android:exported="false"/>
+
+        <!-- Actividad de Marcas -->
+        <activity android:name=".vista.marca.MarcaActivity"
+                  android:exported="false"/>
+        <activity android:name=".vista.categoria.ProductoCategoriaActivity"
+                  android:exported="false" />
+
     </application>
+
 </manifest>

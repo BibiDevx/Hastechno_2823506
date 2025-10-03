@@ -1,18 +1,27 @@
-package com.example.classmovil
+package com.example.classmovil.vista.main
 
-import android.os.Bundle
-import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import android.app.AlertDialog
+import android.os.Bundle
 import android.view.LayoutInflater
-import android.widget.*
+import android.widget.CheckBox
+import android.widget.EditText
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.classmovil.vista.producto.ProductoAdapter
+import com.example.classmovil.R
+import com.example.classmovil.RetrofitClient
+import com.example.classmovil.modelo.Producto
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import android.content.Intent
+import com.example.classmovil.vista.categoria.CategoriaActivity
+import com.example.classmovil.vista.marca.MarcaActivity
+import com.example.classmovil.vista.categoria.ProductoCategoriaActivity
+import android.widget.Button
 
 class MainActivity : AppCompatActivity() {
 
@@ -32,17 +41,27 @@ class MainActivity : AppCompatActivity() {
             onEditarClick = { producto -> mostrarDialogoProducto(producto) },
             onEliminarClick = { producto -> eliminarProducto(producto) },
             onCategoriasClick = { producto ->
-                Toast.makeText(this, "Categorías de: ${producto.nombreProducto}", Toast.LENGTH_SHORT).show()
+                val intent = Intent(this, ProductoCategoriaActivity::class.java)
+                intent.putExtra("idProducto", producto.idProducto) // Pasar el ID del producto
+                startActivity(intent)
             }
         )
 
         recyclerProductos.adapter = adapter
 
-        val fab = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.fabAgregar)
+        val fab = findViewById<FloatingActionButton>(R.id.fabAgregar)
         fab.setOnClickListener { mostrarDialogoProducto() }
 
         // Cargar productos desde API
         cargarProductos()
+
+        findViewById<Button>(R.id.btnCategorias).setOnClickListener {
+            startActivity(Intent(this, CategoriaActivity::class.java))
+        }
+
+        findViewById<Button>(R.id.btnMarcas).setOnClickListener {
+            startActivity(Intent(this, MarcaActivity::class.java))
+        }
     }
 
     private fun cargarProductos() {

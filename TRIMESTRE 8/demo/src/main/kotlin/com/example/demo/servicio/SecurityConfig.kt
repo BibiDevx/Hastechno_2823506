@@ -13,7 +13,7 @@ class SecurityConfig {
             .csrf { it.disable() } // Deshabilita CSRF para APIs REST
             .authorizeHttpRequests { auth ->
                 auth
-                    .requestMatchers("/api/auth/**", "/api/usuarios/**","/api/admins/**", "/api/productos/**").permitAll() // Permite el acceso a todas las rutas de /api/auth
+                    .requestMatchers("/api/auth/**", "/api/usuarios/**","/api/admins/**", "/api/productos/**","/api/categorias/**","/api/marcas/**").permitAll() // Permite el acceso a todas las rutas de /api/auth
                     .anyRequest().authenticated() // Requiere autenticación para cualquier otra ruta
             }
         return http.build()

@@ -1,4 +1,4 @@
-package com.example.classmovil
+package com.example.classmovil.modelo
 
 data class Producto(
     val idProducto: Int? = null,

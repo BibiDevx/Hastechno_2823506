@@ -1,6 +1,7 @@
 package com.example.demo.servicio
 
 import com.example.demo.modelo.Producto
+import com.example.demo.modelo.Categoria
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.core.RowMapper
@@ -106,5 +107,34 @@ class ProductoService {
         val rowsAffected = jdbcTemplate.update(sql, id)
         return rowsAffected > 0
     }
+    fun obtenerCategoriasPorProducto(idProducto: Int): List<Categoria> {
+        val sql = """
+        SELECT c.idCategoria, c.nombreCategoria
+        FROM categoria c
+        INNER JOIN producto_categoria pc ON c.idCategoria = pc.idCategoria
+        WHERE pc.idProducto = ?
+    """
+        return jdbcTemplate.query(sql, { rs, _ ->
+            Categoria(
+                idCategoria = rs.getInt("idCategoria"),
+                nombreCategoria = rs.getString("nombreCategoria")
+            )
+        }, idProducto)
+    }
+
+    fun sincronizarCategorias(idProducto: Int, categoriasIds: List<Int>): Boolean {
+        // Primero eliminar las categorías actuales
+        jdbcTemplate.update("DELETE FROM categoriaproducto WHERE idProducto = ?", idProducto)
+
+        // Insertar las nuevas
+        for (idCategoria in categoriasIds) {
+            jdbcTemplate.update(
+                "INSERT INTO categoriaproducto (idProducto, idCategoria) VALUES (?, ?)",
+                idProducto, idCategoria
+            )
+        }
+        return true
+    }
+
 
 }

@@ -1,6 +1,7 @@
 package com.example.demo.controlador
 
 import com.example.demo.modelo.Producto
+import com.example.demo.modelo.Categoria
 import com.example.demo.servicio.ProductoService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
@@ -63,4 +64,22 @@ class ProductoController {
             ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("error" to "Producto no encontrado."))
         }
     }
+    @GetMapping("/{id}/categorias")
+    fun obtenerCategoriasPorProducto(@PathVariable id: Int): ResponseEntity<List<Categoria>> {
+        val categorias = productoService.obtenerCategoriasPorProducto(id)
+        return ResponseEntity.ok(categorias)
+    }
+
+    @PatchMapping("/{id}/categorias")
+    fun syncCategorias(
+        @PathVariable id: Int,
+        @RequestBody body: Map<String, List<Int>>
+    ): ResponseEntity<*> {
+        val categorias = body["categorias"] ?: return ResponseEntity.badRequest()
+            .body(mapOf("error" to "Debe enviar un array 'categorias'"))
+
+        productoService.sincronizarCategorias(id, categorias)
+        return ResponseEntity.ok(mapOf("mensaje" to "Categorías sincronizadas correctamente"))
+    }
+
 }

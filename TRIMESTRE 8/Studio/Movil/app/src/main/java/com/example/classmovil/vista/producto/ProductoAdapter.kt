@@ -1,4 +1,4 @@
-package com.example.classmovil
+package com.example.classmovil.vista.producto
 
 import android.view.LayoutInflater
 import android.view.View
@@ -6,6 +6,8 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.example.classmovil.R
+import com.example.classmovil.modelo.Producto
 
 class ProductoAdapter(
     private val productos: List<Producto>,
